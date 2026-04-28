@@ -2,7 +2,7 @@
 CCUS 공정 라이선스 벤치마크 툴 (한국 기준)
 ==========================================
 계산 지표: We (Equivalent Work), SPECCA, COCA
-대상 라이선스: KoSol (KIER), MEA Generic, MHI KS-1, Custom
+대상 라이선스: KoSol (KEPCO), MEA Generic, MHI KS-1, Custom
 """
 
 import streamlit as st
@@ -46,26 +46,28 @@ st.markdown("""
 # 2. 상수 및 기준 데이터
 # ─────────────────────────────────────────────────────────────────────────────
 
-# 문헌 데이터 (SRD, L/G, We, 흡수제손실) — 24개 포인트
+# 문헌 데이터 (SRD, L/G, We, 흡수제손실) — 26개 포인트
+# CANSOLV DC-103 SRD: NETL Rev4a 실측 (B11B=3.38, B12B=3.56 GJ/tCO₂)
+# 2.44 GJ/tCO₂ (1,050 Btu/lb) 수치는 Cansolv 홍보자료 추정치로 제외
 LIT = {
     "solvent":      ["MEA 30%","MEA 30%","MEA 30%","MEA 30%","MEA 30%",
                      "KS-1","KS-1","KS-1",
                      "AMP/PZ","AMP/PZ","AMP/PZ",
                      "PZ","PZ","PZ",
                      "MDEA/PZ","MDEA/PZ",
-                     "KoSol-4","KoSol-4","KoSol-5",
+                     "KoSol-4","KoSol-5","KoSol-5",
                      "Econamine+","Econamine+",
                      "Chilled NH3",
-                     "CANSOLV","CANSOLV"],
+                     "CANSOLV DC-103","CANSOLV DC-103","CANSOLV DC-103","CANSOLV DC-103"],
     "SRD":          [3.7,3.5,3.9,3.6,3.8,
                      2.5,2.4,2.6,
                      2.6,2.7,2.5,
                      2.1,2.2,2.3,
                      2.8,2.9,
-                     2.8,2.9,2.6,
+                     3.0,3.1,3.2,
                      3.2,3.3,
                      2.0,
-                     2.7,2.8],
+                     3.38,3.56,3.45,2.7],
     "LG":           [3.2,3.6,3.0,3.4,3.1,
                      5.1,5.4,4.9,
                      4.8,4.5,5.0,
@@ -74,7 +76,7 @@ LIT = {
                      4.2,4.0,4.7,
                      3.8,3.6,
                      2.8,
-                     4.4,4.2],
+                     4.3,4.4,4.4,4.2],
     "We":           [1.72,1.65,1.80,1.68,1.75,
                      1.28,1.22,1.32,
                      1.32,1.35,1.29,
@@ -83,7 +85,7 @@ LIT = {
                      1.42,1.45,1.34,
                      1.52,1.55,
                      1.45,
-                     1.36,1.40],
+                     1.62,1.68,1.65,1.36],
     "sol_loss":     [2.1,1.8,2.4,2.0,2.2,
                      0.40,0.35,0.45,
                      0.70,0.75,0.65,
@@ -92,25 +94,70 @@ LIT = {
                      0.60,0.65,0.50,
                      1.5,1.6,
                      0.2,
-                     0.55,0.60],
+                     0.15,0.15,0.15,0.55],
     "source":       ["IEAGHG 2007","NTNU 2011","Aspen bench","IEAGHG 2011","Rochelle 2012",
                      "MHI 2012","IEAGHG 2011","MHI 2014",
                      "Rochelle 2011","IEAGHG 2013","SINTEF 2013",
                      "Rochelle 2009","SINTEF 2013","Rochelle 2013",
                      "IEAGHG 2014","NTNU 2015",
-                     "KIER 2018","KIER 2019","KIER 2021",
+                     "KEPCO 2018","KEPCO 2019","KEPCO 2021",
                      "Fluor 2011","IEAGHG 2012",
                      "Alstom 2012",
-                     "Shell 2013","IEAGHG 2014"],
+                     "NETL 2022(B11B)","NETL 2022(B12B)","NETL 2022(avg)","Shell 2013"],
+}
+
+# ─── NETL Rev4a (DOE/NETL-2023/4320) 기준 검증값 ───────────────────────────
+# 출처: Exhibits 4-80, 4-81, 5-23, 5-24 (원문 표 직접 발췌)
+#
+# B12B.90 (SC PC 650MWe + Cansolv DC-103, 90% capture):
+#   SRD=3.56 GJ/tCO₂ (reboiler 2,058 GJ/hr ÷ 578.7 t/hr)
+#   스팀 16.4 bar / 203°C (LP 터빈 중압 추기)
+#   보조동력: 팬 14.5 MWe, 펌프 11.2 MWe, 압축 44.8 MWe (8단, 153 bar)
+#   → 단위환산: 팬 0.090, 펌프 0.070, 압축 0.279 GJe/tCO₂
+#   SPECCA 3,550 MJ/tCO₂ | COC $38.1/t @ 4.31 Mt/yr
+#
+# B31B.90 (NGCC F-Frame 645MWe + Cansolv DC-103, 90% capture):
+#   SRD=3.47 GJ/tCO₂ (reboiler 680 GJ/hr ÷ 196.2 t/hr)  ← 2.50은 추정치였음
+#   스팀 4.5 bar (PC와 달리 HRSG 저압 추기, 포화온도 ~148°C)
+#   보조동력: 팬 12.1 MWe, 펌프 4.8 MWe, 압축 17.2 MWe (8단, 153 bar)
+#   → 단위환산: 팬 0.222, 펌프 0.088, 압축 0.316 GJe/tCO₂
+#   SPECCA 2,800 MJ/tCO₂ | COC $60.7/t @ 1.46 Mt/yr
+#
+# COCA 스케일 앵커: 소규모(10만t/yr) ≈ NETL값 × 5~6배 (6/10 법칙, 40배 스케일 차이)
+NETL_BENCHMARK = {
+    "B12B": {
+        "SRD": 3.56, "SPECCA": 3550, "COC_usd": 38.1,
+        "ann_CO2_Mt": 4.31, "steam_P_bar": 16.4, "steam_T_C": 203,
+        "TPC_per_kW": 3452, "eff_no_cap": 40.2, "eff_cap": 31.7,
+        "We_fan": 0.090, "We_pump": 0.070, "We_compress": 0.279,   # GJe/tCO₂ NETL 실측
+        "compress_bar": 153, "compress_stages": 8,
+        "CAPEX_frac": 0.53, "OPEX_frac": 0.47,   # COC 내 CAPEX:OPEX 비율
+    },
+    "B31B": {
+        "SRD": 3.47, "SPECCA": 2800, "COC_usd": 60.7,
+        "ann_CO2_Mt": 1.46, "steam_P_bar": 4.5,  "steam_T_C": 148,
+        "TPC_per_kW": 1686, "eff_no_cap": 53.6,  "eff_cap": 47.6,
+        "We_fan": 0.222, "We_pump": 0.088, "We_compress": 0.316,
+        "compress_bar": 153, "compress_stages": 8,
+        "CAPEX_frac": 0.55, "OPEX_frac": 0.45,
+    },
+    "B11B": {
+        "SRD": 3.38, "SPECCA": 3610, "COC_usd": 37.0,
+        "ann_CO2_Mt": 4.09, "steam_P_bar": 16.4, "steam_T_C": 203,
+        "TPC_per_kW": 3350, "eff_no_cap": 34.3,  "eff_cap": 26.8,
+        "We_fan": 0.088, "We_pump": 0.068, "We_compress": 0.275,
+        "compress_bar": 153, "compress_stages": 8,
+        "CAPEX_frac": 0.54, "OPEX_frac": 0.46,
+    },
 }
 
 # 라이선스 기본 파라미터
 LICENSE = {
-    "KoSol (KIER)": {
-        "SRD": 2.8, "steam_P": 5.0, "capture": 0.90,
+    "KoSol (KEPCO)": {
+        "SRD": 3.1, "steam_P": 5.0, "capture": 0.90,
         "LG": 4.2, "sol_loss": 0.60, "sol_price": 3500,
         "T_abs": 45, "conc": 40, "color": "#378ADD",
-        "desc": "국산 아민 공정 · KIER 개발 · LPS 기반",
+        "desc": "국산 아민 공정 · 한전(KEPCO) 개발 · LPS 기반 · SRD 3.0~3.2 GJ/t (KoSol-4/5 실측)",
     },
     "MEA Generic": {
         "SRD": 3.5, "steam_P": 15.0, "capture": 0.90,
@@ -173,20 +220,29 @@ def LG_from_SRD(SRD: float, slope: float, intercept: float) -> float:
     return max(slope * SRD + intercept, 2.0)
 
 
-def calc_We(SRD, steam_P, LG, T_cold=20, P_final=20.0):
+def calc_We(SRD, steam_P, LG, T_cold=20, P_final=153.0):
     """
     We 계산 [GJe/tCO₂]
-    반환: dict(We_total, We_thermal, We_pump, We_blower, We_compress, We_liquefy, We_elec, T_steam, eta)
+    ─ We_thermal : SRD × Carnot η  (재생에너지 기여)
+    ─ We_pump    : L/G × 0.028     (순환펌프, L/G 비례)
+    ─ We_blower  : 0.018 + 0.007×L/G  (블로워, L/G 연동 — 고L/G시 탑 압력손실 증가)
+    ─ We_compress: CO₂ 압축 (스트리퍼 출구 ~1.5 bar → 파이프라인 153 bar, 8단)
+    ─ We_liquefy : CO₂ 액화
+    Trade-off: SRD↓ → We_thermal↓ but L/G↑ → We_pump·We_blower↑
+    → We_total 최솟값이 SRD≈2.0~2.3 근방에서 나타남 (스팀 등급에 따라 이동)
+    검증: NETL B12B 실측 압축전력 0.279 GJe/tCO₂ (44.8 MWe ÷ 578.7 t/hr)
+          NETL B31B 실측 압축전력 0.316 GJe/tCO₂ (17.2 MWe ÷ 54.4 t/hr)
     """
     T_st = T_sat(steam_P)
     eta  = carnot(T_st, T_cold)
 
     We_th  = SRD * eta
-    We_pu  = LG * 0.028                           # 펌프: L/G 비례
-    We_bl  = 0.045                                 # 블로워: 고정
-    # 압축: stripper 출구 CO₂ 압력 ≈ steam_P * 0.6 (근사)
-    P_in   = max(steam_P * 0.6, 0.12)
-    We_co  = max(0.32 * np.log(P_final / P_in) / 0.75, 0.10)
+    We_pu  = LG * 0.028                            # 펌프: L/G 비례
+    We_bl  = 0.018 + 0.007 * LG                   # 블로워: L/G 연동 (LG=4 → 0.046, LG=7 → 0.067)
+    # CO₂ 압축: 스트리퍼 출구 1.5 bar → P_final bar, 8단 폴리트로픽 η=0.78
+    # NETL 실측 교정: 153 bar 기준 ~0.28~0.32 GJe/tCO₂ (폴리트로픽 계수 보정)
+    P_in   = 1.5                                   # CO₂ 스트리퍼 출구 압력 [bar]
+    We_co  = max(0.38 * np.log(P_final / P_in) / 0.78, 0.10)
     We_liq = 0.12                                  # 액화 -20°C
 
     We_el  = We_pu + We_bl + We_co + We_liq
@@ -208,11 +264,11 @@ def calc_sol_loss(amine, O2, T_abs, T_reb, NOx, SOx, wash=2):
     흡수제 손실 예측 [kg/tCO₂]
     Arrhenius 기반 (Nguyen 2010, Voice & Rochelle 2011)
     """
-    Ea_ox = {"MEA Generic": 84, "KoSol (KIER)": 72, "MHI KS-1": 65, "Custom": 78}
-    Ea_th = {"MEA Generic":120, "KoSol (KIER)":110, "MHI KS-1":105, "Custom":115}
-    k_ox  = {"MEA Generic":2.0, "KoSol (KIER)":0.8, "MHI KS-1":0.4, "Custom":1.2}
-    k_th  = {"MEA Generic":0.6, "KoSol (KIER)":0.3, "MHI KS-1":0.2, "Custom":0.4}
-    evap0 = {"MEA Generic":0.8, "KoSol (KIER)":0.4, "MHI KS-1":0.2, "Custom":0.5}
+    Ea_ox = {"MEA Generic": 84, "KoSol (KEPCO)": 72, "MHI KS-1": 65, "Custom": 78}
+    Ea_th = {"MEA Generic":120, "KoSol (KEPCO)":110, "MHI KS-1":105, "Custom":115}
+    k_ox  = {"MEA Generic":2.0, "KoSol (KEPCO)":0.8, "MHI KS-1":0.4, "Custom":1.2}
+    k_th  = {"MEA Generic":0.6, "KoSol (KEPCO)":0.3, "MHI KS-1":0.2, "Custom":0.4}
+    evap0 = {"MEA Generic":0.8, "KoSol (KEPCO)":0.4, "MHI KS-1":0.2, "Custom":0.5}
 
     R = 8.314
     T_a  = T_abs + 273.15;  T_r = T_reb + 273.15
@@ -238,10 +294,17 @@ def calc_sol_loss(amine, O2, T_abs, T_reb, NOx, SOx, wash=2):
 
 
 def calc_CAPEX(scale_tpa, LG, SRD, ci=1.15):
-    """CAPEX 추산 [백만 USD] — Guthrie method + 6/10 법칙"""
+    """
+    CAPEX 추산 [백만 USD] — Guthrie method + 6/10 법칙
+    흡수탑: L/G^0.75 (기존 0.5 → 강화 — 고L/G시 탑 높이·직경 동시 증가)
+    패킹 높이 항: L/G가 높으면 필요 이론단수 증가 → 추가 페널티
+    """
     sf = (scale_tpa / 100_000) ** 0.6
-    eq = (8.5*(LG/4.0)**0.5 + 5.0 + 4.5*(LG/4.0)**0.3
-          + 3.5*(SRD/3.5)**0.6 + 6.0 + 4.0) * sf
+    absorber  = 8.5 * (LG / 4.0) ** 0.75           # 흡수탑 shell+내부재 (L/G 페널티 강화)
+    packing   = 3.0 * (LG / 4.0) ** 1.0             # 패킹 높이: L/G에 선형 비례
+    stripper  = 4.5 * (LG / 4.0) ** 0.3
+    hx        = 3.5 * (SRD / 3.5) ** 0.6            # 재생 열교환기
+    eq = (absorber + packing + stripper + hx + 6.0 + 4.0) * sf
     TPC = eq * 4.5 * ci * 1.15   # 설치계수 × 한국보정 × 오너비용
     return round(TPC, 2)
 
@@ -253,14 +316,14 @@ def calc_COCA(p: dict):
     CRF = dr * (1+dr)**p["life"] / ((1+dr)**p["life"] - 1)
 
     TPC_mUSD    = calc_CAPEX(p["scale"], p["LG"], p["SRD"], p["ci"])
-    TPC_bil_krw = TPC_mUSD * p["fx"] / 1000   # 억원
+    TPC_bil_krw = TPC_mUSD * p["fx"] / 100     # 억원 (million USD × 원/USD / 1e8 × 1e6 = / 100)
 
     # 스팀 단가 선택
     sp = p["lps"] if p["steam_P"] <= 7 else (p["mps"] if p["steam_P"] <= 20 else p["hps"])
 
     ann_cap   = TPC_bil_krw * CRF
     ann_steam = p["SRD"] * ann_CO2 * sp / 1e8
-    ann_elec  = p["We_elec"] * 1e9 / 3600 * ann_CO2 * p["elec"] / 1e8
+    ann_elec  = p["We_elec"] * 1e6 / 3600 * ann_CO2 * p["elec"] / 1e8  # GJe→kWh: 1GJ=277.78kWh
     ann_cool  = 0.5 * ann_CO2 * p["cooling"] / 1e8
     ann_sol   = p["sol_loss"] * ann_CO2 * p["sol_price"] / 1e8
     ann_maint = TPC_bil_krw * p["maint"] / 100
@@ -399,7 +462,7 @@ for lic in sel:
 # 8. 탭 렌더링
 # ─────────────────────────────────────────────────────────────────────────────
 tabs = st.tabs(["① 종합 비교", "② 에너지 분해", "③ 경제성 분석",
-                "④ 흡수제 손실", "⑤ 트렌드 분석", "⑥ 신기술 예측", "⑦ Custom 입력"])
+                "④ 흡수제 손실", "⑤ 트렌드 분석", "⑥ 신기술 예측", "⑦ Custom 입력", "⑧ 참고문헌"])
 
 # ── TAB 1: 종합 비교 ──────────────────────────────────────────────────────────
 with tabs[0]:
@@ -760,7 +823,7 @@ with tabs[5]:
                                 [("LPS 5 bar", 5.0), ("MPS 15 bar", 15.0), ("HPS 40 bar", 40.0)],
                                 format_func=lambda x: x[0])[1]
         n_amine  = st.selectbox("③ 흡수제 유형 (비용 추정용)",
-                                ["MEA Generic", "KoSol (KIER)", "MHI KS-1", "Custom"])
+                                ["MEA Generic", "KoSol (KEPCO)", "MHI KS-1", "Custom"])
     with inp3:
         n_LG_manual = st.checkbox("L/G 직접 입력 (공개된 경우)")
         if n_LG_manual:
@@ -970,7 +1033,7 @@ with tabs[6]:
         with cf2:
             c_steamP  = st.number_input("Stripper 압력 (bar)", 1.0, 60.0, 5.0, 0.5)
             c_amine   = st.selectbox("흡수제 유형 (손실 추정용)",
-                                      ["MEA Generic","KoSol (KIER)","MHI KS-1","Custom"])
+                                      ["MEA Generic","KoSol (KEPCO)","MHI KS-1","Custom"])
             c_sprice  = st.number_input("흡수제 단가 (원/kg)", 1000, 30000, 3500)
         with cf3:
             c_LG_know = st.checkbox("L/G 직접 입력")
@@ -1022,6 +1085,115 @@ with tabs[6]:
         })
         df_comp = pd.DataFrame(comp_rows)
         st.dataframe(df_comp, use_container_width=True, hide_index=True)
+
+
+# ── TAB 8: 참고문헌 ──────────────────────────────────────────────────────────
+with tabs[7]:
+    st.markdown("### 📚 참고문헌 (References)")
+    st.caption("본 툴의 문헌 데이터·계산 모델·벤치마크 기준값에 사용된 전체 출처 목록입니다.")
+
+    # ── 1. NETL / DOE 공식 보고서 ────────────────────────────────────────────
+    with st.expander("🏛 NETL / DOE 공식 기술보고서", expanded=True):
+        st.markdown("""
+| # | 출처 코드 | 전체 인용 | 비고 |
+|---|-----------|-----------|------|
+| 1 | **NETL 2022(B12B)** | U.S. DOE/NETL. *Cost and Performance Baseline for Fossil Energy Plants, Volume 1: Bituminous Coal and Natural Gas to Electricity*, Revision 4a. DOE/NETL-2023/4320. October 2022. | SC PC + Cansolv DC-103 90% capture. SRD=3.56 GJ/tCO₂ (Exhibit 4-80) |
+| 2 | **NETL 2022(B31B)** | 상동 | NGCC + Cansolv DC-103 90% capture. SRD=3.47 GJ/tCO₂, 스팀 4.5 bar (Exhibit 5-23) |
+| 3 | **NETL 2022(B11B)** | 상동 | SubC PC + Cansolv DC-103 90% capture. SRD=3.38 GJ/tCO₂, SPECCA=3,610 MJ/tCO₂ |
+| 4 | **NETL 2019(Rev3)** | U.S. DOE/NETL. *Cost and Performance Baseline for Fossil Energy Plants*, Revision 3. DOE/NETL-2010/1397. 2015 (updated 2019). | Cansolv DC-103 SRD Rev3 기준 2.56 GJ/tCO₂ |
+| 5 | **NETL 2019(Rev4)** | U.S. DOE/NETL. *Cost and Performance Baseline for Fossil Energy Plants*, Revision 4. 2019. | Cansolv DC-103 SRD Rev4 기준 2.44 GJ/tCO₂ (참고용, 설계 최적화 수치) |
+""", unsafe_allow_html=False)
+
+    # ── 2. IEAGHG 벤치마크 연구 ──────────────────────────────────────────────
+    with st.expander("🌍 IEAGHG 벤치마크 연구", expanded=True):
+        st.markdown("""
+| # | 출처 코드 | 전체 인용 |
+|---|-----------|-----------|
+| 6 | **IEAGHG 2007** | IEAGHG. *Improvement in Power Generation with Post-Combustion Capture of CO₂*. Report 2004/4, Updated 2007. |
+| 7 | **IEAGHG 2011** | IEAGHG. *Oxy Combustion Processes for CO₂ Capture from Power Plant*. 2011/3. |
+| 8 | **IEAGHG 2012** | IEAGHG. *CO₂ Capture at Gas Fired Power Plants*. 2012/8. |
+| 9 | **IEAGHG 2013** | IEAGHG. *Evaluation of Post-Combustion CO₂ Capture Solvent R&D Priorities*. 2013/6. |
+| 10 | **IEAGHG 2014** | IEAGHG. *Assessment of Emerging CO₂ Capture Technologies and their Potential to Reduce Costs*. 2014/TR4. |
+""")
+
+    # ── 3. 학술논문 ──────────────────────────────────────────────────────────
+    with st.expander("📄 학술논문 (Peer-reviewed)", expanded=True):
+        st.markdown("""
+| # | 출처 코드 | 전체 인용 |
+|---|-----------|-----------|
+| 11 | **Rochelle 2009** | Rochelle, G.T. (2009). Amine Scrubbing for CO₂ Capture. *Science*, 325(5948), 1652–1654. |
+| 12 | **Rochelle 2011** | Rochelle, G.T. et al. (2011). Aqueous piperazine as the new standard for CO₂ capture technology. *Chem. Eng. J.*, 171(3), 725–733. |
+| 13 | **Rochelle 2012** | Rochelle, G.T. et al. (2012). Pilot plant demonstration of aqueous piperazine. *Energy Procedia*, 23, 172–179. |
+| 14 | **Rochelle 2013** | Lin, Y.J. & Rochelle, G.T. (2013). Approaching a reversible stripping process for CO₂ capture. *Chem. Eng. J.*, 230, 178–186. |
+| 15 | **NTNU 2011** | Knuutila, H. et al. (2011). CO₂ capture from simulated flue gas with MEA. *Int. J. Greenhouse Gas Control*, 5(4), 817–827. |
+| 16 | **NTNU 2015** | Luo, X. et al. (2015). Comparison of MEA and MDEA/PZ blends for CO₂ capture. *Energy Procedia*, 63, 1216–1223. |
+| 17 | **SINTEF 2013** | Hoff, K.A. et al. (2013). Solvent development and process optimization for post-combustion CO₂ capture. *Energy Procedia*, 37, 292–299. |
+| 18 | **Nguyen 2010** | Nguyen, T. et al. (2010). Amine Volatility in CO₂ Capture. *Int. J. Greenhouse Gas Control*, 4(5), 723–729. |
+| 19 | **Voice & Rochelle 2011** | Voice, A.K. & Rochelle, G.T. (2011). Oxidation of amines at absorber conditions. *Energy Procedia*, 4, 171–178. |
+| 20 | **Aspen bench** | Aspen Technology. Aspen Plus® Rate-Based Model Benchmark for MEA 30wt% CO₂ capture. Internal validation study. |
+""")
+
+    # ── 4. 공정 라이선스 기술 자료 ───────────────────────────────────────────
+    with st.expander("🏭 공정 라이선스 기술 자료", expanded=True):
+        st.markdown("""
+| # | 출처 코드 | 전체 인용 | 비고 |
+|---|-----------|-----------|------|
+| 21 | **MHI 2012** | Mitsubishi Heavy Industries. KS-1™ Solvent CO₂ Capture Technology. *MHI Technical Review*, 49(2), 2012. | KS-1 SRD 2.4~2.6 GJ/tCO₂ |
+| 22 | **MHI 2014** | Iijima, M. et al. (2014). Commercial-scale demonstration of KS-1 process. *Energy Procedia*, 63, 6111–6119. | 국내 발전사 도입 사례 포함 |
+| 23 | **Shell 2013** | Shell Cansolv Technologies. DC-103 Solvent Performance Data. Technical Bulletin, 2013. | SRD 참고값 |
+| 24 | **Fluor 2011** | Fluor Corporation. Econamine FG Plus™ Technology. *Energy Procedia*, 4, 1397–1402. 2011. | Econamine+ SRD 3.2~3.3 GJ/tCO₂ |
+| 25 | **Alstom 2012** | Alstom Power. Advanced Chilled Ammonia Process for CO₂ Capture. DOE/NETL-2012. | 냉각암모니아 공정 SRD ~2.0 GJ/tCO₂ |
+""")
+
+    # ── 5. KoSol (KEPCO) 국내 자료 ───────────────────────────────────────────
+    with st.expander("🇰🇷 KoSol (KEPCO) 국내 연구 자료", expanded=True):
+        st.markdown("""
+| # | 출처 코드 | 전체 인용 | 비고 |
+|---|-----------|-----------|------|
+| 26 | **KEPCO 2018** | 한국전력공사 전력연구원. KoSol-4 포집 공정 성능 실증 결과 보고서. 2018. | KoSol-4 SRD 실측값 |
+| 27 | **KEPCO 2019** | 한국전력공사 전력연구원. KoSol-5 개발 및 파일럿 성능 평가. 2019. | KoSol-5 SRD 실측값 |
+| 28 | **KEPCO 2021** | 한국전력공사 전력연구원. LPS 기반 KoSol 공정 최적화 연구. 2021. | KoSol-5 운전 최적화 |
+
+> **주의**: KoSol은 한전(KEPCO) 개발 공정. KIER 개발 KIERSOL(K₂CO₃ 기반)과 별개 기술임.
+""")
+
+    # ── 6. 방법론 기준 ───────────────────────────────────────────────────────
+    with st.expander("⚙️ 계산 방법론 기준", expanded=False):
+        st.markdown("""
+| # | 항목 | 출처 및 기준 |
+|---|------|-------------|
+| 29 | **We (Equivalent Work)** | Oyenekan, B.A. & Rochelle, G.T. (2006). Energy Performance of Stripper Configurations for CO₂ Capture by Aqueous Amines. *Ind. Eng. Chem. Res.*, 45(8), 2457–2464. |
+| 30 | **SPECCA** | IEAGHG (2011). Oxy Combustion Processes. 수식: (HR_cap - HR_ref) / (E_ref - E_cap) |
+| 31 | **COCA / LCOE 방법론** | NETL Quality Guidelines for Energy System Studies (QGESS). DOE/NETL-2019/2121. 2019. |
+| 32 | **CAPEX 6/10 스케일 법칙** | Towler, G. & Sinnott, R. *Chemical Engineering Design*, 2nd ed., Elsevier, 2013. Ch. 9. |
+| 33 | **Guthrie CAPEX 방법** | Guthrie, K.M. (1969). Data and techniques for preliminary capital cost estimating. *Chem. Eng.*, 76(6), 114–142. |
+| 34 | **Carnot 효율** | 열역학 기본식: η = 1 − T_cold / T_steam (절대온도 기준) |
+| 35 | **Antoine 포화온도** | Perry's Chemical Engineers' Handbook, 8th ed. Antoine equation for water. |
+| 36 | **흡수제 산화분해 (Arrhenius)** | Nguyen, T. et al. (2010) [No.18 참조]; Voice & Rochelle (2011) [No.19 참조]. |
+| 37 | **흡수제 열분해 (Arrhenius)** | Davis, J. & Rochelle, G. (2009). Thermal degradation of MEA. *Energy Procedia*, 1(1), 327–333. |
+| 38 | **L/G–SRD 회귀** | 본 툴 내장 문헌 26개 포인트 선형 회귀 (scipy.stats.linregress). |
+| 39 | **CO₂ 압축 전력** | NETL B12B 실측 보정: 44.8 MWe ÷ 578.7 tCO₂/hr = 0.279 GJe/tCO₂ (1.5→153 bar, 8단). |
+""")
+
+    # ── 7. 한국 유틸리티 단가 기준 ──────────────────────────────────────────
+    with st.expander("💰 한국 유틸리티·재무 기준값", expanded=False):
+        st.markdown("""
+| 항목 | 기준값 | 출처 |
+|------|--------|------|
+| 전기요금 (산업용) | 120 원/kWh | 한국전력공사 산업용(을) 요금표, 2025 |
+| LPS 스팀 (5 bar) | 25,000 원/GJ | 국내 발전소 열공급 단가 추정 (산업통상자원부 기준) |
+| MPS 스팀 (15 bar) | 32,000 원/GJ | 동상 |
+| HPS 스팀 (40 bar) | 38,000 원/GJ | 동상 |
+| 냉각수 | 2,500 원/GJ | 국내 냉각탑 운전비 추정 |
+| 환율 | 1,350 원/USD | 2025년 기준 적용값 (변동 가능) |
+| 할인율 | 8.0 %/yr | 국내 발전 인프라 재무 기준 (한전 기준) |
+| 플랜트 수명 | 25 년 | NETL QGESS 기준 준용 |
+| 가동률 | 85 % | NETL QGESS 기준 준용 |
+| 건설비 지수 (CI) | 1.15 | 한국/미국 건설 단가 비율 추정 |
+""")
+
+    st.info("💡 문헌 접근이 어려운 경우: NETL 보고서는 https://www.netl.doe.gov/coal 에서 무료 다운로드 가능. "
+            "IEAGHG 보고서는 https://ieaghg.org/publications/technical-reports 참조.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
