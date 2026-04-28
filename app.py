@@ -30,6 +30,14 @@ st.markdown("""
     .block-container { padding-top: 3.5rem; }
     .stTabs [data-baseweb="tab-list"] { margin-top: 0.5rem; }
 
+    /* ── 모바일 탭: 가로 스크롤 허용, 글자 크기 축소 ── */
+    @media (max-width: 768px) {
+        .block-container { padding-top: 1rem; padding-left: 0.5rem; padding-right: 0.5rem; }
+        .stTabs [data-baseweb="tab-list"] { overflow-x: auto; flex-wrap: nowrap; }
+        .stTabs [data-baseweb="tab"] { font-size: 0.72rem !important; padding: 6px 8px !important; white-space: nowrap; }
+        [data-testid="stMetricValue"] { font-size: 0.9rem !important; }
+    }
+
     /* ── 헤더: 테마 투명 배경 (라이트·다크 공용) ── */
     header[data-testid="stHeader"] {
         background: transparent !important;
@@ -80,9 +88,19 @@ st.markdown("""
         padding: 10px 14px; border-radius: 4px; margin: 8px 0; font-size: 13px;
     }
 
-    /* ── 사이드바 배경 ── */
-    [data-testid="stSidebar"] {
-        background: var(--secondary-background-color) !important;
+    /* ── 사이드바: 모바일 오버레이 포함 완전 불투명 고정 ── */
+    /* 다크모드 기본값 #262730 (Streamlit dark secondary-background) */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"] > div,
+    [data-testid="stSidebar"] > div:first-child {
+        background-color: #262730 !important;
+        opacity: 1 !important;
+    }
+
+    /* 모바일 오버레이 드로어 (Streamlit이 생성하는 backdrop) */
+    [data-testid="stSidebarNav"],
+    section[data-testid="stSidebar"] {
+        background-color: #262730 !important;
     }
 
     /* ── DataFrame 테이블 다크모드 대응 ── */
@@ -94,6 +112,14 @@ st.markdown("""
     [data-testid="stExpander"] {
         background: var(--secondary-background-color);
         border-radius: 6px;
+    }
+
+    /* ── 모바일: 사이드바 열렸을 때 본문 dim 처리 ── */
+    @media (max-width: 768px) {
+        [data-testid="stSidebar"] {
+            background-color: #262730 !important;
+            box-shadow: 4px 0 16px rgba(0, 0, 0, 0.6);
+        }
     }
 </style>
 """, unsafe_allow_html=True)
