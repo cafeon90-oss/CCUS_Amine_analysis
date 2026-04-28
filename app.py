@@ -26,7 +26,7 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    .block-container { padding-top: 1.2rem; }
+    .block-container { padding-top: 3.5rem; }
     .stMetric { background: #f8f8f8; border-radius: 8px; padding: 8px 12px; }
     .warning-box { background:#fff3cd; border-left:4px solid #ffc107;
                    padding:10px 14px; border-radius:4px; margin:8px 0; font-size:13px; }
