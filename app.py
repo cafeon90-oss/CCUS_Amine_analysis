@@ -173,7 +173,7 @@ LICENSE = {
     },
     "Boundary Dam 3": {
         "SRD": 3.4, "steam_P": 16.4, "capture": 0.90,
-        "LG": 4.4, "sol_loss": 0.15, "sol_price": 4050000,
+        "LG": 4.4, "sol_loss": 0.15, "sol_price": 4050,  # 원/kg (≈$3/kg = $3,000/tonne)
         "T_abs": 40, "conc": 35, "color": "#FF8C00",
         "desc": "세계 최초 상업 규모 발전소 후연도 CCS · SaskPower (캐나다, 2014) · "
                 "Shell Cansolv DC-103 · 160 MWe SC PC · 설계 1 Mt CO₂/yr · LP 스팀 16.4 bar",
@@ -247,9 +247,10 @@ def calc_We(SRD, steam_P, LG, T_cold=20, P_final=153.0):
     We_pu  = LG * 0.028                            # 펌프: L/G 비례
     We_bl  = 0.018 + 0.007 * LG                   # 블로워: L/G 연동 (LG=4 → 0.046, LG=7 → 0.067)
     # CO₂ 압축: 스트리퍼 출구 1.5 bar → P_final bar, 8단 폴리트로픽 η=0.78
-    # NETL 실측 교정: 153 bar 기준 ~0.28~0.32 GJe/tCO₂ (폴리트로픽 계수 보정)
+    # 계수 0.047 = NETL B12B 실측 보정 (44.8 MWe ÷ 578.7 t/hr = 0.279 GJe/tCO₂ @ 153 bar)
+    # 검증: 0.047 × ln(153/1.5) / 0.78 = 0.047 × 4.615 / 0.78 = 0.278 ✓
     P_in   = 1.5                                   # CO₂ 스트리퍼 출구 압력 [bar]
-    We_co  = max(0.38 * np.log(P_final / P_in) / 0.78, 0.10)
+    We_co  = max(0.047 * np.log(P_final / P_in) / 0.78, 0.05)
     We_liq = 0.12                                  # 액화 -20°C
 
     We_el  = We_pu + We_bl + We_co + We_liq
@@ -359,10 +360,15 @@ def calc_COCA(p: dict):
     }
 
 
-def calc_SPECCA(SRD, We_total, capture=0.90):
-    """SPECCA [MJ/tCO₂ avoided] — 산업 설비 기준"""
-    primary = (SRD + We_total * 2.5) * 1000   # 전기 → 1차에너지 환산 (2.5배)
-    return round(primary / capture, 0)
+def calc_SPECCA(SRD, We_elec, capture=0.90):
+    """
+    SPECCA [MJ/tCO₂ avoided] — NETL B12B 기준 보정식
+    = (SRD × 500 + We_elec × 2500) / capture
+    ─ SRD: 스팀 에너지 열손실 기여분 (전체 SRD가 아닌 효율 페널티 부분)
+    ─ We_elec × 2.5×1000: 전기 보조동력 → 1차에너지 환산 (η_grid ≈ 0.4)
+    검증: NETL B12B SRD=3.56, We_elec≈0.56 → (3.56×500+0.56×2500)/0.90 = 3,530 ≈ 실측 3,550 ✓
+    """
+    return round((SRD * 500 + We_elec * 2500) / capture, 0)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -462,7 +468,7 @@ for lic in sel:
     Tr = T_sat(p["steam_P"])
     we = calc_We(p["SRD"], p["steam_P"], LG, T_cold, P_final)
     sl = calc_sol_loss(lic, fgd["O2"], fgd["T"], Tr, fgd["NOx"], fgd["SOx"])
-    sp = calc_SPECCA(p["SRD"], we["We_total"], p["capture"])
+    sp = calc_SPECCA(p["SRD"], we["We_elec"], p["capture"])
     coca_p = {**eco, "SRD": p["SRD"], "LG": LG, "steam_P": p["steam_P"],
               "We_elec": we["We_elec"], "sol_loss": sl["grand"],
               "sol_price": p["sol_price"]}
@@ -851,7 +857,7 @@ with tabs[5]:
     n_Tr    = T_sat(n_steamP)
     n_we    = calc_We(n_SRD, n_steamP, n_LG, T_cold, P_final)
     n_sol   = calc_sol_loss(n_amine, fgd["O2"], fgd["T"], n_Tr, fgd["NOx"], fgd["SOx"])
-    n_sp    = calc_SPECCA(n_SRD, n_we["We_total"])
+    n_sp    = calc_SPECCA(n_SRD, n_we["We_elec"])
     n_coca_p = {**eco, "SRD": n_SRD, "LG": n_LG, "steam_P": n_steamP,
                 "We_elec": n_we["We_elec"], "sol_loss": n_sol["grand"],
                 "sol_price": LICENSE.get(n_amine, LICENSE["MEA Generic"])["sol_price"]}
@@ -1065,7 +1071,7 @@ with tabs[6]:
         c_Tr   = T_sat(c_steamP)
         c_we   = calc_We(c_SRD, c_steamP, c_LG_v, T_cold, P_final)
         c_sl   = calc_sol_loss(c_amine, fgd["O2"], fgd["T"], c_Tr, fgd["NOx"], fgd["SOx"])
-        c_sp   = calc_SPECCA(c_SRD, c_we["We_total"], c_cap/100)
+        c_sp   = calc_SPECCA(c_SRD, c_we["We_elec"], c_cap/100)
         c_cp   = {**eco, "SRD": c_SRD, "LG": c_LG_v, "steam_P": c_steamP,
                   "We_elec": c_we["We_elec"], "sol_loss": c_sl["grand"], "sol_price": c_sprice}
         c_co   = calc_COCA(c_cp)
