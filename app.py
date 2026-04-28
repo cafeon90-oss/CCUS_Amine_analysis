@@ -26,19 +26,75 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    /* ── 레이아웃 ── */
     .block-container { padding-top: 3.5rem; }
-    header[data-testid="stHeader"] { background: rgba(255,255,255,0.95); }
     .stTabs [data-baseweb="tab-list"] { margin-top: 0.5rem; }
-    .stMetric { background: #f8f8f8; border-radius: 8px; padding: 8px 12px; }
-    [data-testid="stMetricValue"] { font-size: 1.05rem !important; }
-    [data-testid="stMetricLabel"] { font-size: 0.78rem !important; }
-    [data-testid="stMetricDelta"] { font-size: 0.75rem !important; }
-    .warning-box { background:#fff3cd; border-left:4px solid #ffc107;
-                   padding:10px 14px; border-radius:4px; margin:8px 0; font-size:13px; }
-    .error-box   { background:#f8d7da; border-left:4px solid #dc3545;
-                   padding:10px 14px; border-radius:4px; margin:8px 0; font-size:13px; }
-    .info-box    { background:#d1ecf1; border-left:4px solid #17a2b8;
-                   padding:10px 14px; border-radius:4px; margin:8px 0; font-size:13px; }
+
+    /* ── 헤더: 테마 투명 배경 (라이트·다크 공용) ── */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    /* ── Metric 카드: Streamlit CSS 변수 사용 → 테마 자동 대응 ── */
+    /* Streamlit 버전별 클래스/속성 차이 대응용 다중 셀렉터 */
+    [data-testid="stMetric"],
+    .stMetric,
+    div[data-testid="metric-container"] {
+        background: var(--secondary-background-color) !important;
+        border-radius: 8px;
+        padding: 8px 12px;
+    }
+    [data-testid="stMetricValue"],
+    [data-testid="metric-value"] {
+        font-size: 1.05rem !important;
+        color: var(--text-color) !important;
+    }
+    [data-testid="stMetricLabel"],
+    [data-testid="metric-label"] {
+        font-size: 0.78rem !important;
+        color: var(--text-color) !important;
+        opacity: 0.8;
+    }
+    [data-testid="stMetricDelta"],
+    [data-testid="metric-delta"] { font-size: 0.75rem !important; }
+
+    /* ── 알림 박스: rgba 반투명 → 라이트·다크 모두 가독 ── */
+    .warning-box {
+        background: rgba(255, 193,   7, 0.15);
+        border-left: 4px solid #ffc107;
+        color: var(--text-color);
+        padding: 10px 14px; border-radius: 4px; margin: 8px 0; font-size: 13px;
+    }
+    .error-box {
+        background: rgba(220,  53,  69, 0.15);
+        border-left: 4px solid #dc3545;
+        color: var(--text-color);
+        padding: 10px 14px; border-radius: 4px; margin: 8px 0; font-size: 13px;
+    }
+    .info-box {
+        background: rgba( 23, 162, 184, 0.15);
+        border-left: 4px solid #17a2b8;
+        color: var(--text-color);
+        padding: 10px 14px; border-radius: 4px; margin: 8px 0; font-size: 13px;
+    }
+
+    /* ── 사이드바 배경 ── */
+    [data-testid="stSidebar"] {
+        background: var(--secondary-background-color) !important;
+    }
+
+    /* ── DataFrame 테이블 다크모드 대응 ── */
+    [data-testid="stDataFrame"] {
+        background: var(--secondary-background-color);
+    }
+
+    /* ── expander 다크모드 배경 ── */
+    [data-testid="stExpander"] {
+        background: var(--secondary-background-color);
+        border-radius: 6px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -520,6 +576,22 @@ tabs = st.tabs(["① 종합 비교", "② 에너지 분해", "③ 경제성 분�
 # ── TAB 1: 종합 비교 ──────────────────────────────────────────────────────────
 with tabs[0]:
     st.markdown("### 라이선스 종합 비교")
+
+    # ── 지표 정의 박스 ────────────────────────────────────────────────────────
+    with st.expander("📖 주요 지표 정의 (클릭하여 펼치기)", expanded=False):
+        st.markdown("""
+| 지표 | 단위 | 정의 | 낮을수록 |
+|------|------|------|----------|
+| **SRD** (Specific Reboiler Duty) | GJ/tCO₂ | 스트리퍼 재생에 필요한 열에너지. 흡수제의 CO₂ 결합력과 재생 효율을 직접 반영하는 핵심 성능 지표. 값이 작을수록 스팀 소비량이 적음. | ✅ 좋음 |
+| **L/G** (Liquid-to-Gas ratio) | L/Nm³ | 흡수제 순환량 / 처리 가스량. L/G가 높으면 흡수 효율은 좋지만 펌프·열교환기 크기가 커져 CAPEX·보조전력이 증가. SRD와 trade-off 관계. | ✅ 좋음 |
+| **We** (Equivalent Work) | GJe/tCO₂ | 포집에 소모되는 에너지를 전기로 환산한 종합 에너지 지표. 스팀(열)의 기회비용(Carnot 변환) + 전기 보조동력(펌프·블로워·압축·액화·칠러) 합산. 서로 다른 에너지원을 단일 척도로 비교할 때 사용. | ✅ 좋음 |
+| **SPECCA** (Specific Primary Energy Consumption for CO₂ Avoided) | MJ/tCO₂ | 포집하지 않은 기준 발전소 대비 CO₂ 1톤을 회피하는 데 추가로 소비되는 1차 에너지. IEAGHG/NETL 공식 벤치마크 지표. 값이 클수록 에너지 패널티가 크다는 의미. | ✅ 좋음 |
+| **COCA** (Cost of CO₂ Avoided) | USD/tCO₂ | CO₂ 1톤을 회피하는 데 드는 총 비용. 연간 CAPEX(자본비 상환) + OPEX(스팀·전기·냉각수·흡수제·유지보수·보험·인건비) 합산 후 연간 포집량으로 나눈 값. 투자 타당성 판단의 최종 경제 지표. | ✅ 좋음 |
+| **CAPEX** (Capital Expenditure) | 백만 USD | 흡수탑·스트리퍼·열교환기·압축기 등 설비 초기 투자비. Guthrie 방법 + 6/10 스케일 법칙으로 추산. | ✅ 좋음 |
+
+> **📌 읽는 법:** 모든 지표는 낮을수록 우수. We·SPECCA는 에너지 효율 비교, COCA는 비용 비교에 사용. SRD가 낮아도 L/G가 높으면 CAPEX·We가 올라갈 수 있어 SRD만으로 최적 용매를 판단하기 어렵습니다.
+        """)
+
     if not RES:
         st.warning("왼쪽 사이드바에서 라이선스를 하나 이상 선택하세요.")
     else:
