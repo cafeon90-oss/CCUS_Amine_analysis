@@ -491,12 +491,12 @@ with tabs[0]:
 
         # 막대 차트 3개
         col_a, col_b, col_c = st.columns(3)
-        def bar_chart(title, y_vals, y_label):
+        def bar_chart(title, y_vals, y_label, fmt=".2f"):
             fig = go.Figure([go.Bar(
                 x=list(RES.keys()),
                 y=y_vals,
                 marker_color=[RES[l]["color"] for l in RES],
-                text=[f"{v:.2f}" for v in y_vals],
+                text=[f"{v:{fmt}}" for v in y_vals],
                 textposition="outside",
             )])
             fig.update_layout(title=title, yaxis_title=y_label, height=450,
@@ -506,11 +506,11 @@ with tabs[0]:
             return fig
 
         col_a.plotly_chart(bar_chart("We (GJe/tCO₂)",
-            [RES[l]["we"]["We_total"] for l in RES], "GJe/tCO₂"), use_container_width=True)
+            [RES[l]["we"]["We_total"] for l in RES], "GJe/tCO₂", fmt=".3f"), use_container_width=True)
         col_b.plotly_chart(bar_chart("SPECCA (MJ/tCO₂)",
-            [RES[l]["SPECCA"] for l in RES], "MJ/tCO₂"), use_container_width=True)
+            [RES[l]["SPECCA"] for l in RES], "MJ/tCO₂", fmt=",.0f"), use_container_width=True)
         col_c.plotly_chart(bar_chart("COCA (USD/tCO₂)",
-            [RES[l]["coca"]["COCA_usd"] for l in RES], "USD/tCO₂"), use_container_width=True)
+            [RES[l]["coca"]["COCA_usd"] for l in RES], "USD/tCO₂", fmt=",.0f"), use_container_width=True)
 
         # 상세 테이블
         rows = []
@@ -522,9 +522,9 @@ with tabs[0]:
                 "T_reb (°C)": f"{r['T_reb']:.0f}",
                 "스팀 등급": r["grade"],
                 "We (GJe/t)": f"{r['we']['We_total']:.3f}",
-                "SPECCA (MJ/t)": f"{r['SPECCA']:.0f}",
-                "COCA (USD/t)": f"${r['coca']['COCA_usd']:.0f}",
-                "COCA (만원/t)": f"{r['coca']['COCA_man']:.1f}",
+                "SPECCA (MJ/t)": f"{r['SPECCA']:,.0f}",
+                "COCA (USD/t)": f"${r['coca']['COCA_usd']:,.0f}",
+                "COCA (만원/t)": f"{r['coca']['COCA_man']:,.1f}",
                 "흡수제 손실 (kg/t)": f"{r['sol']['grand']:.2f}",
                 "추정 불확도": "±15%",
             })
@@ -608,11 +608,11 @@ with tabs[2]:
         cols = st.columns(len(RES))
         for i, (lic, r) in enumerate(RES.items()):
             with cols[i]:
-                st.metric(f"{lic} — TPC", f"{r['coca']['TPC_bil']:.0f} 억원",
-                          delta=f"${r['coca']['TPC_mUSD']:.1f}M USD")
-                st.metric("연간 CO₂", f"{r['coca']['ann_CO2']/1e4:.1f} 만 tCO₂/년")
-                st.metric("COCA", f"${r['coca']['COCA_usd']:.0f}",
-                          delta=f"{r['coca']['COCA_man']:.1f} 만원/tCO₂")
+                st.metric(f"{lic} — TPC", f"{r['coca']['TPC_bil']:,.0f} 억원",
+                          delta=f"${r['coca']['TPC_mUSD']:,.1f}M USD")
+                st.metric("연간 CO₂", f"{r['coca']['ann_CO2']/1e4:,.1f} 만 tCO₂/년")
+                st.metric("COCA (USD/tCO₂)", f"${r['coca']['COCA_usd']:,.0f}")
+                st.metric("COCA (원/tCO₂)", f"{r['coca']['COCA_man']*10000:,.0f} 원")
 
 
 # ── TAB 4: 흡수제 손실 ───────────────────────────────────────────────────────
@@ -677,7 +677,7 @@ with tabs[3]:
             price = LICENSE[lic]["sol_price"]
             ann_c = loss * ann_CO2_s * price / 1e8
             mcols[i].metric(lic,
-                             f"{ann_c:.1f} 억원/년",
+                             f"{ann_c:,.1f} 억원/년",
                              delta=f"손실 {loss:.2f} kg/tCO₂")
 
         # O₂ 민감도
@@ -856,8 +856,9 @@ with tabs[5]:
     m3.metric("We_total",
               f"{n_we['We_total']:.3f} GJe/t",
               delta=f"재생 {n_we['We_thermal']/n_we['We_total']*100:.0f}% / 포집 {(n_we['We_pump']+n_we['We_blower'])/n_we['We_total']*100:.0f}%")
-    m4.metric("SPECCA",   f"{n_sp:.0f} MJ/t")
-    m5.metric("COCA",     f"${n_coca['COCA_usd']:.0f} / {n_coca['COCA_man']:.0f}만원")
+    m4.metric("SPECCA",          f"{n_sp:,.0f} MJ/t")
+    m5.metric("COCA (USD/tCO₂)", f"${n_coca['COCA_usd']:,.0f}",
+              delta=f"{n_coca['COCA_man']*10000:,.0f} 원/tCO₂")
 
     st.markdown("---")
     # ── 차트 행 1: Trade-off 곡선 + 에너지 분해 막대 ──────────────────────
@@ -1058,11 +1059,12 @@ with tabs[6]:
 
         st.success(f"**{c_name}** 계산 완료")
         m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("We",          f"{c_we['We_total']:.3f} GJe/tCO₂")
-        m2.metric("SPECCA",      f"{c_sp:.0f} MJ/tCO₂")
-        m3.metric("COCA",        f"${c_co['COCA_usd']:.0f}/tCO₂")
-        m4.metric("흡수제 손실", f"{c_sl['grand']:.2f} kg/tCO₂")
-        m5.metric("TPC",         f"{c_co['TPC_bil']:.0f} 억원")
+        m1.metric("We",               f"{c_we['We_total']:.3f} GJe/tCO₂")
+        m2.metric("SPECCA",           f"{c_sp:,.0f} MJ/tCO₂")
+        m3.metric("COCA (USD/tCO₂)", f"${c_co['COCA_usd']:,.0f}",
+                  delta=f"{c_co['COCA_man']*10000:,.0f} 원/tCO₂")
+        m4.metric("흡수제 손실",      f"{c_sl['grand']:.2f} kg/tCO₂")
+        m5.metric("TPC",              f"{c_co['TPC_bil']:,.0f} 억원")
 
         if not c_LG_know:
             st.info(f"L/G 회귀 추정: {c_LG_v:.2f} L/Nm³  (문헌 회귀 기반, ±20%)")
