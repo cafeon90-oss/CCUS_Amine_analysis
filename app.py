@@ -27,7 +27,12 @@ st.set_page_config(
 st.markdown("""
 <style>
     .block-container { padding-top: 3.5rem; }
+    header[data-testid="stHeader"] { background: rgba(255,255,255,0.95); }
+    .stTabs [data-baseweb="tab-list"] { margin-top: 0.5rem; }
     .stMetric { background: #f8f8f8; border-radius: 8px; padding: 8px 12px; }
+    [data-testid="stMetricValue"] { font-size: 1.05rem !important; }
+    [data-testid="stMetricLabel"] { font-size: 0.78rem !important; }
+    [data-testid="stMetricDelta"] { font-size: 0.75rem !important; }
     .warning-box { background:#fff3cd; border-left:4px solid #ffc107;
                    padding:10px 14px; border-radius:4px; margin:8px 0; font-size:13px; }
     .error-box   { background:#f8d7da; border-left:4px solid #dc3545;
@@ -779,18 +784,17 @@ with tabs[5]:
     # ── 요약 메트릭 ────────────────────────────────────────────────────────
     st.markdown("#### 📊 추정 결과")
     m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("재생에너지 기여\nWe_thermal",
+    m1.metric("We_thermal (재생)",
               f"{n_we['We_thermal']:.3f} GJe/t",
               help="SRD × Carnot 효율 — 스팀에서 온 에너지")
-    m2.metric("포집에너지 기여\nWe_capture",
+    m2.metric("We_capture (포집)",
               f"{(n_we['We_pump']+n_we['We_blower']):.3f} GJe/t",
-              help="펌프(L/G 비례) + 블로워 — L/G가 높을수록 증가")
-    m3.metric("전체 We",
+              help="펌프(L/G 비례) + 블로워")
+    m3.metric("We_total",
               f"{n_we['We_total']:.3f} GJe/t",
-              delta=f"재생:{n_we['We_thermal']/n_we['We_total']*100:.0f}% / "
-                    f"포집:{(n_we['We_pump']+n_we['We_blower'])/n_we['We_total']*100:.0f}%")
-    m4.metric("SPECCA",   f"{n_sp:.0f} MJ/tCO₂")
-    m5.metric("COCA",     f"${n_coca['COCA_usd']:.0f}/tCO₂\n({n_coca['COCA_man']:.0f}만원/t)")
+              delta=f"재생 {n_we['We_thermal']/n_we['We_total']*100:.0f}% / 포집 {(n_we['We_pump']+n_we['We_blower'])/n_we['We_total']*100:.0f}%")
+    m4.metric("SPECCA",   f"{n_sp:.0f} MJ/t")
+    m5.metric("COCA",     f"${n_coca['COCA_usd']:.0f} / {n_coca['COCA_man']:.0f}만원")
 
     st.markdown("---")
     # ── 차트 행 1: Trade-off 곡선 + 에너지 분해 막대 ──────────────────────
@@ -839,8 +843,8 @@ with tabs[5]:
               "<sub>SRD↓ → 재생에너지↓ but 포집에너지↑ → We_total 감소폭이 SRD만큼 크지 않음</sub>",
         xaxis_title="SRD — 재생에너지 (GJ/tCO₂)",
         yaxis_title="We 성분 (GJe/tCO₂)",
-        height=380, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        legend=dict(orientation="h", y=-0.25))
+        height=460, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(orientation="h", y=-0.22, font=dict(size=11)))
     tc1.plotly_chart(fig_tradeoff, use_container_width=True)
 
     # [우] 현재 입력값 에너지 성분 stacked bar
@@ -863,11 +867,11 @@ with tabs[5]:
     fig_bar.update_layout(
         barmode="stack",
         title=f"'{n_name}' 에너지 성분 분해<br>"
-              f"<sub>재생 기여 {n_we['We_thermal']/n_we['We_total']*100:.0f}% | "
-              f"포집·후처리 기여 {(1-n_we['We_thermal']/n_we['We_total'])*100:.0f}%</sub>",
-        yaxis_title="We (GJe/tCO₂)", height=380,
+              f"<sub>재생 {n_we['We_thermal']/n_we['We_total']*100:.0f}% | "
+              f"포집·후처리 {(1-n_we['We_thermal']/n_we['We_total'])*100:.0f}%</sub>",
+        yaxis_title="We (GJe/tCO₂)", height=460,
         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        legend=dict(orientation="h", y=-0.35))
+        legend=dict(orientation="h", y=-0.22, font=dict(size=11)))
     tc2.plotly_chart(fig_bar, use_container_width=True)
 
     # ── 차트 행 2: 문헌 대비 위치 + COCA 비교 ─────────────────────────────
