@@ -2,7 +2,7 @@
 CCUS 공정 라이선스 벤치마크 툴 (한국 기준)
 ==========================================
 계산 지표: We (Equivalent Work), SPECCA, COCA
-대상 라이선스: KoSol (KEPCO), MEA Generic, MHI KS-1, Custom
+대상 라이선스: KoSol (KEPCO), MEA 30% (기준선), MHI KS-1, Custom
 """
 
 import streamlit as st
@@ -495,11 +495,11 @@ with tabs[0]:
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("최저 We",   f"{RES[best_We]['we']['We_total']:.3f} GJe/tCO₂",  best_We)
         c2.metric("최저 COCA", f"${RES[best_COCA]['coca']['COCA_usd']:.0f}/tCO₂", best_COCA)
-        if "MEA Generic" in RES and len(RES) > 1:
-            mea_w = RES["MEA Generic"]["we"]["We_total"]
+        if "MEA 30% (기준선)" in RES and len(RES) > 1:
+            mea_w = RES["MEA 30% (기준선)"]["we"]["We_total"]
             bw    = RES[best_We]["we"]["We_total"]
             c3.metric("MEA 대비 We 절감", f"{(mea_w-bw)/mea_w*100:.1f}%", best_We)
-            mea_c = RES["MEA Generic"]["coca"]["COCA_usd"]
+            mea_c = RES["MEA 30% (기준선)"]["coca"]["COCA_usd"]
             bc    = RES[best_COCA]["coca"]["COCA_usd"]
             c4.metric("MEA 대비 COCA 절감", f"{(mea_c-bc)/mea_c*100:.1f}%", best_COCA)
         else:
@@ -842,7 +842,7 @@ with tabs[5]:
                                 [("LPS 5 bar", 5.0), ("MPS 15 bar", 15.0), ("HPS 40 bar", 40.0)],
                                 format_func=lambda x: x[0])[1]
         n_amine  = st.selectbox("③ 흡수제 유형 (비용 추정용)",
-                                ["MEA Generic", "KoSol (KEPCO)", "MHI KS-1", "Custom"])
+                                ["MEA 30% (기준선)", "KoSol (KEPCO)", "MHI KS-1", "Custom"])
     with inp3:
         n_LG_manual = st.checkbox("L/G 직접 입력 (공개된 경우)")
         if n_LG_manual:
@@ -860,7 +860,7 @@ with tabs[5]:
     n_sp    = calc_SPECCA(n_SRD, n_we["We_elec"])
     n_coca_p = {**eco, "SRD": n_SRD, "LG": n_LG, "steam_P": n_steamP,
                 "We_elec": n_we["We_elec"], "sol_loss": n_sol["grand"],
-                "sol_price": LICENSE.get(n_amine, LICENSE["MEA Generic"])["sol_price"]}
+                "sol_price": LICENSE.get(n_amine, LICENSE["MEA 30% (기준선)"])["sol_price"]}
     n_coca  = calc_COCA(n_coca_p)
 
     # ── 요약 메트릭 ────────────────────────────────────────────────────────
@@ -1001,7 +1001,7 @@ with tabs[5]:
                               fgd["NOx"], fgd["SOx"])
         cp = {**eco, "SRD": s, "LG": lg_s, "steam_P": n_steamP,
               "We_elec": we_s["We_elec"], "sol_loss": sol_s["grand"],
-              "sol_price": LICENSE.get(n_amine, LICENSE["MEA Generic"])["sol_price"]}
+              "sol_price": LICENSE.get(n_amine, LICENSE["MEA 30% (기준선)"])["sol_price"]}
         coca_arr.append(calc_COCA(cp)["COCA_usd"])
 
     fig_coca = go.Figure()
@@ -1053,7 +1053,7 @@ with tabs[6]:
         with cf2:
             c_steamP  = st.number_input("Stripper 압력 (bar)", 1.0, 60.0, 5.0, 0.5)
             c_amine   = st.selectbox("흡수제 유형 (손실 추정용)",
-                                      ["MEA Generic","KoSol (KEPCO)","MHI KS-1","Custom"])
+                                      ["MEA 30% (기준선)","KoSol (KEPCO)","MHI KS-1","Custom"])
             c_sprice  = st.number_input("흡수제 단가 (원/kg)", 1000, 30000, 3500)
         with cf3:
             c_LG_know = st.checkbox("L/G 직접 입력")
