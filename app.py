@@ -159,17 +159,24 @@ LICENSE = {
         "T_abs": 45, "conc": 40, "color": "#378ADD",
         "desc": "국산 아민 공정 · 한전(KEPCO) 개발 · LPS 기반 · SRD 3.0~3.2 GJ/t (KoSol-4/5 실측)",
     },
-    "MEA Generic": {
+    "MEA 30% (기준선)": {
         "SRD": 3.5, "steam_P": 15.0, "capture": 0.90,
         "LG": 3.5, "sol_loss": 2.0, "sol_price": 2200,
         "T_abs": 40, "conc": 30, "color": "#E24B4A",
-        "desc": "MEA 30wt% 글로벌 기준선",
+        "desc": "MEA 30wt% 글로벌 기준선 · NETL/IEAGHG 벤치마크 기준 · SPECCA·We 비교 기준점",
     },
     "MHI KS-1": {
         "SRD": 2.5, "steam_P": 15.0, "capture": 0.90,
         "LG": 5.1, "sol_loss": 0.40, "sol_price": 8000,
         "T_abs": 40, "conc": 35, "color": "#1D9E75",
-        "desc": "MHI 힌더드 아민 · 국내 발전사 도입 사례",
+        "desc": "MHI 힌더드 아민 · 국내 발전사 도입 사례 · Petra Nova(2017) KS-1 계열",
+    },
+    "Boundary Dam 3": {
+        "SRD": 3.4, "steam_P": 16.4, "capture": 0.90,
+        "LG": 4.4, "sol_loss": 0.15, "sol_price": 4050000,
+        "T_abs": 40, "conc": 35, "color": "#FF8C00",
+        "desc": "세계 최초 상업 규모 발전소 후연도 CCS · SaskPower (캐나다, 2014) · "
+                "Shell Cansolv DC-103 · 160 MWe SC PC · 설계 1 Mt CO₂/yr · LP 스팀 16.4 bar",
     },
 }
 
@@ -264,11 +271,11 @@ def calc_sol_loss(amine, O2, T_abs, T_reb, NOx, SOx, wash=2):
     흡수제 손실 예측 [kg/tCO₂]
     Arrhenius 기반 (Nguyen 2010, Voice & Rochelle 2011)
     """
-    Ea_ox = {"MEA Generic": 84, "KoSol (KEPCO)": 72, "MHI KS-1": 65, "Custom": 78}
-    Ea_th = {"MEA Generic":120, "KoSol (KEPCO)":110, "MHI KS-1":105, "Custom":115}
-    k_ox  = {"MEA Generic":2.0, "KoSol (KEPCO)":0.8, "MHI KS-1":0.4, "Custom":1.2}
-    k_th  = {"MEA Generic":0.6, "KoSol (KEPCO)":0.3, "MHI KS-1":0.2, "Custom":0.4}
-    evap0 = {"MEA Generic":0.8, "KoSol (KEPCO)":0.4, "MHI KS-1":0.2, "Custom":0.5}
+    Ea_ox = {"MEA 30% (기준선)": 84, "KoSol (KEPCO)": 72, "MHI KS-1": 65, "Boundary Dam 3": 62, "Custom": 78}
+    Ea_th = {"MEA 30% (기준선)":120, "KoSol (KEPCO)":110, "MHI KS-1":105, "Boundary Dam 3":103, "Custom":115}
+    k_ox  = {"MEA 30% (기준선)":2.0, "KoSol (KEPCO)":0.8, "MHI KS-1":0.4, "Boundary Dam 3":0.35, "Custom":1.2}
+    k_th  = {"MEA 30% (기준선)":0.6, "KoSol (KEPCO)":0.3, "MHI KS-1":0.2, "Boundary Dam 3":0.18, "Custom":0.4}
+    evap0 = {"MEA 30% (기준선)":0.8, "KoSol (KEPCO)":0.4, "MHI KS-1":0.2, "Boundary Dam 3":0.15, "Custom":0.5}
 
     R = 8.314
     T_a  = T_abs + 273.15;  T_r = T_reb + 273.15
@@ -400,6 +407,7 @@ with st.sidebar:
     st.divider()
     st.markdown("**📏 플랜트 규모**")
     scale = st.number_input("CO₂ 포집량 (tCO₂/년)", 10_000, 2_000_000, 100_000, 10_000)
+    st.caption(f"= **{scale:,} tCO₂/년**")
 
     st.divider()
     st.markdown("**🌡 사이트 조건**")
@@ -413,18 +421,23 @@ with st.sidebar:
     with st.expander("⚡ 유틸리티 단가 (표준값 내장)"):
         elec    = st.number_input("전기 (원/kWh)",    value=KR["elec"])
         lps     = st.number_input("LPS 스팀 (원/GJ)", value=KR["lps"])
+        st.caption(f"{lps:,} 원/GJ")
         mps     = st.number_input("MPS 스팀 (원/GJ)", value=KR["mps"])
+        st.caption(f"{mps:,} 원/GJ")
         hps     = st.number_input("HPS 스팀 (원/GJ)", value=KR["hps"])
+        st.caption(f"{hps:,} 원/GJ")
         cooling = st.number_input("냉각수 (원/GJ)",   value=KR["cooling"])
 
     with st.expander("💰 재무 가정 (표준값 내장)"):
         fx       = st.number_input("환율 (원/USD)",       value=KR["fx"])
+        st.caption(f"{fx:,} 원/USD")
         dr       = st.slider("할인율 (%)",     4.0, 15.0, float(KR["discount"]), 0.5)
         life     = st.slider("설비 수명 (년)", 15,  30,   KR["lifetime"])
         cap      = st.slider("가동률 (%)",     70,  95,   KR["capacity"])
         maint    = st.number_input("유지보수율 (%/년)", value=KR["maint"])
         operators= st.number_input("운전원 수 (명)",   value=KR["operators"])
         labor    = st.number_input("인건비 (원/명/년)", value=KR["labor"])
+        st.caption(f"{labor:,} 원/명/년")
         ci       = st.number_input("건설비 지수",      value=KR["ci"])
 
 # ─────────────────────────────────────────────────────────────────────────────
