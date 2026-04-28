@@ -790,7 +790,7 @@ with tabs[5]:
               delta=f"재생:{n_we['We_thermal']/n_we['We_total']*100:.0f}% / "
                     f"포집:{(n_we['We_pump']+n_we['We_blower'])/n_we['We_total']*100:.0f}%")
     m4.metric("SPECCA",   f"{n_sp:.0f} MJ/tCO₂")
-    m5.metric("COCA",     f"${n_coca['COCA_usd']:.0f}/tCO₂\n({n_coca['COCA_krw']/10000:.0f}만원/t)")
+    m5.metric("COCA",     f"${n_coca['COCA_usd']:.0f}/tCO₂\n({n_coca['COCA_man']/10000:.0f}만원/t)")
 
     st.markdown("---")
     # ── 차트 행 1: Trade-off 곡선 + 에너지 분해 막대 ──────────────────────
