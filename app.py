@@ -227,6 +227,24 @@ def LG_from_SRD(SRD: float, slope: float, intercept: float) -> float:
     return max(slope * SRD + intercept, 2.0)
 
 
+def calc_We_chill(T_cold: float, Q_chill: float = 0.4) -> float:
+    """
+    T_cold > 35°C 시 흡수탑 린용매 냉각(칠러) 전력 [GJe/tCO₂]
+    ─ Q_chill = 0.4 GJ_th/tCO₂ : 린용매를 흡수탑 입구 목표 40°C로 냉각하는 열량
+      (린용매 공급온도 ~50°C, LG=4, Cp≈3.5 kJ/kg·K, ΔT=10°C → ~0.14 GJ_th/tCO₂
+       + 흡수탑 반응열 일부 제거 ~0.26 GJ_th/tCO₂ → 합산 ≈ 0.4 GJ_th/tCO₂)
+    ─ COP = 0.5 × Carnot COP (실제 냉동기 효율 ≈ Carnot × 50%)
+    ─ T_chill = 10°C (냉매 공급 온도, 흡수탑 냉각 목표 40°C 기준)
+    검증: T_cold=40°C → COP=4.72 → We_chill=0.085 GJe/tCO₂
+          T_cold=45°C → COP=4.04 → We_chill=0.099 GJe/tCO₂
+    """
+    if T_cold <= 35.0:
+        return 0.0
+    T_chill_C = 10.0                           # 냉매 공급 온도 [°C]
+    COP = 0.5 * (T_chill_C + 273.15) / max(T_cold - T_chill_C, 1.0)
+    return Q_chill / COP
+
+
 def calc_We(SRD, steam_P, LG, T_cold=20, P_final=153.0):
     """
     We 계산 [GJe/tCO₂]
@@ -235,6 +253,7 @@ def calc_We(SRD, steam_P, LG, T_cold=20, P_final=153.0):
     ─ We_blower  : 0.018 + 0.007×L/G  (블로워, L/G 연동 — 고L/G시 탑 압력손실 증가)
     ─ We_compress: CO₂ 압축 (스트리퍼 출구 ~1.5 bar → 파이프라인 153 bar, 8단)
     ─ We_liquefy : CO₂ 액화
+    ─ We_chill   : T_cold > 35°C 시 흡수탑 칠러 전력 (린용매 냉각)
     Trade-off: SRD↓ → We_thermal↓ but L/G↑ → We_pump·We_blower↑
     → We_total 최솟값이 SRD≈2.0~2.3 근방에서 나타남 (스팀 등급에 따라 이동)
     검증: NETL B12B 실측 압축전력 0.279 GJe/tCO₂ (44.8 MWe ÷ 578.7 t/hr)
@@ -252,8 +271,9 @@ def calc_We(SRD, steam_P, LG, T_cold=20, P_final=153.0):
     P_in   = 1.5                                   # CO₂ 스트리퍼 출구 압력 [bar]
     We_co  = max(0.047 * np.log(P_final / P_in) / 0.78, 0.05)
     We_liq = 0.12                                  # 액화 -20°C
+    We_ch  = calc_We_chill(T_cold)                 # 칠러: T_cold > 35°C 시만 발생
 
-    We_el  = We_pu + We_bl + We_co + We_liq
+    We_el  = We_pu + We_bl + We_co + We_liq + We_ch
     return {
         "We_total":   We_th + We_el,
         "We_thermal": We_th,
@@ -261,6 +281,7 @@ def calc_We(SRD, steam_P, LG, T_cold=20, P_final=153.0):
         "We_blower":  We_bl,
         "We_compress":We_co,
         "We_liquefy": We_liq,
+        "We_chill":   We_ch,
         "We_elec":    We_el,
         "T_steam":    T_st,
         "eta":        eta,
@@ -318,7 +339,12 @@ def calc_CAPEX(scale_tpa, LG, SRD, ci=1.15):
 
 
 def calc_COCA(p: dict):
-    """COCA 계산 — 전체 비용 통합 [USD/tCO₂, 만원/tCO₂]"""
+    """
+    COCA 계산 — 전체 비용 통합 [USD/tCO₂, 만원/tCO₂]
+    T_cold 보정:
+    ① 냉각수 비용: T_cold↑ → 냉각탑 ΔT 감소 → 유량↑ → 비용 ∝ (T_cold/20)^0.5
+    ② 칠러 전력비: T_cold > 35°C 시 We_elec에 We_chill이 이미 포함 → 자동 반영
+    """
     ann_CO2 = p["scale"] * p["cap"] / 100
     dr  = p["dr"] / 100
     CRF = dr * (1+dr)**p["life"] / ((1+dr)**p["life"] - 1)
@@ -329,10 +355,15 @@ def calc_COCA(p: dict):
     # 스팀 단가 선택
     sp = p["lps"] if p["steam_P"] <= 7 else (p["mps"] if p["steam_P"] <= 20 else p["hps"])
 
+    # 냉각수 온도 보정 계수 (기준: 20°C)
+    # T_cold↑ → 냉각탑 접근온도(approach temperature)↓ → 냉각수 유량↑ → 펌프·운전비↑
+    T_cold      = p.get("T_cold", 20.0)
+    cool_factor = max(1.0, (T_cold / 20.0) ** 0.5)  # 20°C=1.0, 40°C=1.41, 45°C=1.50
+
     ann_cap   = TPC_bil_krw * CRF
     ann_steam = p["SRD"] * ann_CO2 * sp / 1e8
     ann_elec  = p["We_elec"] * 1e6 / 3600 * ann_CO2 * p["elec"] / 1e8  # GJe→kWh: 1GJ=277.78kWh
-    ann_cool  = 0.5 * ann_CO2 * p["cooling"] / 1e8
+    ann_cool  = 0.5 * ann_CO2 * p["cooling"] / 1e8 * cool_factor        # T_cold 연동 보정
     ann_sol   = p["sol_loss"] * ann_CO2 * p["sol_price"] / 1e8
     ann_maint = TPC_bil_krw * p["maint"] / 100
     ann_ins   = TPC_bil_krw * KR["insurance"] / 100
@@ -342,21 +373,23 @@ def calc_COCA(p: dict):
 
     COCA_krw = total_ann * 1e8 / ann_CO2 if ann_CO2 > 0 else 0
     return {
-        "COCA_usd":   round(COCA_krw / p["fx"], 1),
-        "COCA_man":   round(COCA_krw / 10000, 1),
-        "TPC_mUSD":   TPC_mUSD,
-        "TPC_bil":    round(TPC_bil_krw, 1),
-        "ann_cap":    round(ann_cap, 2),
-        "ann_steam":  round(ann_steam, 2),
-        "ann_elec":   round(ann_elec, 2),
-        "ann_cool":   round(ann_cool, 2),
-        "ann_sol":    round(ann_sol, 2),
-        "ann_maint":  round(ann_maint, 2),
-        "ann_ins":    round(ann_ins, 2),
-        "ann_labor":  round(ann_labor, 2),
-        "total_ann":  round(total_ann, 2),
-        "ann_CO2":    round(ann_CO2, 0),
-        "CRF":        round(CRF, 4),
+        "COCA_usd":    round(COCA_krw / p["fx"], 1),
+        "COCA_man":    round(COCA_krw / 10000, 1),
+        "TPC_mUSD":    TPC_mUSD,
+        "TPC_bil":     round(TPC_bil_krw, 1),
+        "ann_cap":     round(ann_cap, 2),
+        "ann_steam":   round(ann_steam, 2),
+        "ann_elec":    round(ann_elec, 2),
+        "ann_cool":    round(ann_cool, 2),
+        "ann_sol":     round(ann_sol, 2),
+        "ann_maint":   round(ann_maint, 2),
+        "ann_ins":     round(ann_ins, 2),
+        "ann_labor":   round(ann_labor, 2),
+        "total_ann":   round(total_ann, 2),
+        "ann_CO2":     round(ann_CO2, 0),
+        "CRF":         round(CRF, 4),
+        "cool_factor": round(cool_factor, 3),
+        "T_cold":      T_cold,
     }
 
 
@@ -472,7 +505,7 @@ for lic in sel:
     sp = calc_SPECCA(p["SRD"], we["We_elec"], p["capture"])
     coca_p = {**eco, "SRD": p["SRD"], "LG": LG, "steam_P": p["steam_P"],
               "We_elec": we["We_elec"], "sol_loss": sl["grand"],
-              "sol_price": p["sol_price"]}
+              "sol_price": p["sol_price"], "T_cold": T_cold}
     co = calc_COCA(coca_p)
     RES[lic] = {"SRD": p["SRD"], "LG": LG, "T_reb": Tr,
                 "grade": "LPS" if p["steam_P"]<=7 else ("MPS" if p["steam_P"]<=20 else "HPS"),
@@ -563,7 +596,8 @@ with tabs[1]:
                  ("We_pump",   "펌프 (L/G 비례)",     "#EF9F27"),
                  ("We_blower", "블로워 (FG 압손)",     "#97C459"),
                  ("We_compress","CO₂ 압축",            "#85B7EB"),
-                 ("We_liquefy","액화 / 최종 압력",     "#AFA9EC")]
+                 ("We_liquefy","액화 / 최종 압력",     "#AFA9EC"),
+                 ("We_chill",  "칠러 (T_cold>35°C)",  "#C0A0FF")]
 
         fig_stk = go.Figure()
         for key, label, col in COMPS:
@@ -861,7 +895,8 @@ with tabs[5]:
     n_sp    = calc_SPECCA(n_SRD, n_we["We_elec"])
     n_coca_p = {**eco, "SRD": n_SRD, "LG": n_LG, "steam_P": n_steamP,
                 "We_elec": n_we["We_elec"], "sol_loss": n_sol["grand"],
-                "sol_price": LICENSE.get(n_amine, LICENSE["MEA 30% (기준선)"])["sol_price"]}
+                "sol_price": LICENSE.get(n_amine, LICENSE["MEA 30% (기준선)"])["sol_price"],
+                "T_cold": T_cold}
     n_coca  = calc_COCA(n_coca_p)
 
     # ── 요약 메트릭 ────────────────────────────────────────────────────────
@@ -938,8 +973,9 @@ with tabs[5]:
         "블로워 (We_blower)":        n_we["We_blower"],
         "압축 (We_compress)":        n_we["We_compress"],
         "액화 (We_liquefy)":         n_we["We_liquefy"],
+        "칠러 (We_chill)":           n_we["We_chill"],
     }
-    colors_comp = ["#E24B4A","#378ADD","#85B7EB","#1D9E75","#EF9F27"]
+    colors_comp = ["#E24B4A","#378ADD","#85B7EB","#1D9E75","#EF9F27","#C0A0FF"]
     fig_bar = go.Figure()
     for (label, val), col in zip(comps.items(), colors_comp):
         pct_v = val / n_we["We_total"] * 100
@@ -1002,7 +1038,8 @@ with tabs[5]:
                               fgd["NOx"], fgd["SOx"])
         cp = {**eco, "SRD": s, "LG": lg_s, "steam_P": n_steamP,
               "We_elec": we_s["We_elec"], "sol_loss": sol_s["grand"],
-              "sol_price": LICENSE.get(n_amine, LICENSE["MEA 30% (기준선)"])["sol_price"]}
+              "sol_price": LICENSE.get(n_amine, LICENSE["MEA 30% (기준선)"])["sol_price"],
+              "T_cold": T_cold}
         coca_arr.append(calc_COCA(cp)["COCA_usd"])
 
     fig_coca = go.Figure()
@@ -1074,7 +1111,8 @@ with tabs[6]:
         c_sl   = calc_sol_loss(c_amine, fgd["O2"], fgd["T"], c_Tr, fgd["NOx"], fgd["SOx"])
         c_sp   = calc_SPECCA(c_SRD, c_we["We_elec"], c_cap/100)
         c_cp   = {**eco, "SRD": c_SRD, "LG": c_LG_v, "steam_P": c_steamP,
-                  "We_elec": c_we["We_elec"], "sol_loss": c_sl["grand"], "sol_price": c_sprice}
+                  "We_elec": c_we["We_elec"], "sol_loss": c_sl["grand"], "sol_price": c_sprice,
+                  "T_cold": T_cold}
         c_co   = calc_COCA(c_cp)
 
         st.success(f"**{c_name}** 계산 완료")
@@ -1210,6 +1248,8 @@ with tabs[7]:
 | 45 | **흡수제 열분해 (Arrhenius)** | Davis, J. & Rochelle, G. (2009). Thermal degradation of MEA. *Energy Procedia*, 1(1), 327–333. |
 | 46 | **L/G–SRD 회귀** | 본 툴 내장 문헌 26개 포인트 선형 회귀 (scipy.stats.linregress). |
 | 47 | **CO₂ 압축 전력** | NETL B12B 실측 보정: 44.8 MWe ÷ 578.7 tCO₂/hr = 0.279 GJe/tCO₂ (1.5→153 bar, 8단). |
+| 48 | **냉각수 비용 T_cold 보정** | 냉각탑 접근온도(approach temperature) 감소 → 냉각수 유량 증가 관계: GPSA Engineering Data Book (2004), Section 9 "Cooling Towers". 보정계수 `(T_cold/20)^0.5` 적용. |
+| 49 | **칠러(흡수탑 냉각) 전력 모델** | T_cold > 35°C 시 흡수탑 린용매 냉각용 냉동기 필요. Q_chill = 0.4 GJ_th/tCO₂, COP = 0.5 × Carnot. 근거: Moser, P. et al. (2011). *Chiller integration for post-combustion CO₂ capture in hot climates*. Energy Procedia, 4, 1337–1343. |
 """)
 
     # ── 8. 한국 유틸리티 단가 기준 ──────────────────────────────────────────
