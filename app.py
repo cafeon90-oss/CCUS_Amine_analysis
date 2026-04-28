@@ -239,26 +239,31 @@ LICENSE = {
         "SRD": 3.1, "steam_P": 5.0, "capture": 0.90,
         "LG": 4.2, "sol_loss": 0.60, "sol_price": 3500,
         "T_abs": 45, "conc": 40, "color": "#378ADD",
-        "desc": "국산 아민 공정 · 한전(KEPCO) 개발 · LPS 기반 · SRD 3.0~3.2 GJ/t (KoSol-4/5 실측)",
+        "pilot": True,   # 파일럿 실증 데이터 — 상업 플랜트 없음
+        "desc": "국산 아민 공정 · 한전(KEPCO) 개발 · LPS 기반 · SRD 3.0~3.2 GJ/t (KoSol-4/5 파일럿 실증) "
+                "⚠️ 상업 플랜트 미존재 — 파일럿(0.5~10 tCO₂/일) 데이터 기반, 상업화 시 SRD +10~20% 페널티 예상",
     },
     "MEA 30% (기준선)": {
         "SRD": 3.5, "steam_P": 15.0, "capture": 0.90,
         "LG": 3.5, "sol_loss": 2.0, "sol_price": 2200,
         "T_abs": 40, "conc": 30, "color": "#E24B4A",
-        "desc": "MEA 30wt% 글로벌 기준선 · NETL/IEAGHG 벤치마크 기준 · SPECCA·We 비교 기준점",
+        "pilot": False,
+        "desc": "MEA 30wt% 글로벌 기준선 · NETL/IEAGHG 벤치마크 기준 · SPECCA·We 비교 기준점 (계산 기준, 실제 플랜트 아님)",
     },
     "MHI KS-1": {
         "SRD": 2.5, "steam_P": 15.0, "capture": 0.90,
         "LG": 5.1, "sol_loss": 0.40, "sol_price": 8000,
         "T_abs": 40, "conc": 35, "color": "#1D9E75",
-        "desc": "MHI 힌더드 아민 · 국내 발전사 도입 사례 · Petra Nova(2017) KS-1 계열",
+        "pilot": False,
+        "desc": "MHI 힌더드 아민 · 상업 플랜트: Petra Nova 240 MWe (2017, 2020 중단) · 국내 발전사 일부 도입 · 상업 실증 데이터 기반",
     },
     "Boundary Dam 3": {
         "SRD": 3.4, "steam_P": 16.4, "capture": 0.90,
-        "LG": 4.4, "sol_loss": 0.15, "sol_price": 4050,  # 원/kg (≈$3/kg = $3,000/tonne)
+        "LG": 4.4, "sol_loss": 0.15, "sol_price": 4050,
         "T_abs": 40, "conc": 35, "color": "#FF8C00",
-        "desc": "세계 최초 상업 규모 발전소 후연도 CCS · SaskPower (캐나다, 2014) · "
-                "Shell Cansolv DC-103 · 160 MWe SC PC · 설계 1 Mt CO₂/yr · LP 스팀 16.4 bar",
+        "pilot": False,
+        "desc": "세계 최초 상업 규모 발전소 후연도 CCS · SaskPower (캐나다, 2014~) · "
+                "Shell Cansolv DC-103 · 160 MWe SC PC · 설계 1 Mt CO₂/yr · LP 스팀 16.4 bar · 현재 운전 중",
     },
 }
 
@@ -621,32 +626,54 @@ with tabs[0]:
     if not RES:
         st.warning("왼쪽 사이드바에서 라이선스를 하나 이상 선택하세요.")
     else:
+        # ── 파일럿 데이터 경고 배너 ──────────────────────────────────────────
+        pilot_list = [l for l in RES if LICENSE[l].get("pilot", False)]
+        if pilot_list:
+            st.markdown(
+                f'<div class="warning-box">⚠️ <b>파일럿 데이터 포함:</b> '
+                f'<b>{", ".join(pilot_list)}</b>는 상업 플랜트 운전 실적이 없는 파일럿(소규모 실증) 데이터입니다. '
+                f'상업화 시 SRD +10~20%, CAPEX 스케일업 페널티가 추가될 수 있어 '
+                f'상업 플랜트(Boundary Dam 3, MHI KS-1)와 직접 비교 시 주의가 필요합니다. '
+                f'차트에서 <b>† 표시</b>로 구분됩니다.</div>',
+                unsafe_allow_html=True,
+            )
+
+        # ── 차트용 라벨: 파일럿은 † 접미사 ─────────────────────────────────
+        def chart_label(lic):
+            return lic + " †" if LICENSE[lic].get("pilot", False) else lic
+
+        chart_labels = [chart_label(l) for l in RES]
+
         # KPI 카드
         best_We   = min(RES, key=lambda x: RES[x]["we"]["We_total"])
         best_COCA = min(RES, key=lambda x: RES[x]["coca"]["COCA_usd"])
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("최저 We",   f"{RES[best_We]['we']['We_total']:.3f} GJe/tCO₂",  best_We)
-        c2.metric("최저 COCA", f"${RES[best_COCA]['coca']['COCA_usd']:.0f}/tCO₂", best_COCA)
+        c1.metric("최저 We",   f"{RES[best_We]['we']['We_total']:.3f} GJe/tCO₂",  chart_label(best_We))
+        c2.metric("최저 COCA", f"${RES[best_COCA]['coca']['COCA_usd']:.0f}/tCO₂", chart_label(best_COCA))
         if "MEA 30% (기준선)" in RES and len(RES) > 1:
             mea_w = RES["MEA 30% (기준선)"]["we"]["We_total"]
             bw    = RES[best_We]["we"]["We_total"]
-            c3.metric("MEA 대비 We 절감", f"{(mea_w-bw)/mea_w*100:.1f}%", best_We)
+            c3.metric("MEA 대비 We 절감", f"{(mea_w-bw)/mea_w*100:.1f}%", chart_label(best_We))
             mea_c = RES["MEA 30% (기준선)"]["coca"]["COCA_usd"]
             bc    = RES[best_COCA]["coca"]["COCA_usd"]
-            c4.metric("MEA 대비 COCA 절감", f"{(mea_c-bc)/mea_c*100:.1f}%", best_COCA)
+            c4.metric("MEA 대비 COCA 절감", f"{(mea_c-bc)/mea_c*100:.1f}%", chart_label(best_COCA))
         else:
             c3.metric("CO₂ 최종 압력", f"{P_final} bar")
             c4.metric("냉각수 온도",   f"{T_cold} °C")
 
         st.divider()
 
-        # 막대 차트 3개
+        # 막대 차트 3개 (파일럿 라이선스는 † 라벨 + 점선 테두리)
         col_a, col_b, col_c = st.columns(3)
+
         def bar_chart(title, y_vals, y_label, fmt=".2f"):
             fig = go.Figure([go.Bar(
-                x=list(RES.keys()),
+                x=chart_labels,
                 y=y_vals,
                 marker_color=[RES[l]["color"] for l in RES],
+                marker_line_color=["#FFD700" if LICENSE[l].get("pilot") else "rgba(0,0,0,0)"
+                                   for l in RES],
+                marker_line_width=[2 if LICENSE[l].get("pilot") else 0 for l in RES],
                 text=[f"{v:{fmt}}" for v in y_vals],
                 textposition="outside",
             )])
@@ -667,7 +694,8 @@ with tabs[0]:
         rows = []
         for lic, r in RES.items():
             rows.append({
-                "라이선스": lic,
+                "라이선스": chart_label(lic),
+                "데이터 출처": "파일럿 실증" if LICENSE[lic].get("pilot") else "상업 실적",
                 "SRD (GJ/t)": r["SRD"],
                 "L/G (추정)": f"{r['LG']:.1f}",
                 "T_reb (°C)": f"{r['T_reb']:.0f}",
@@ -677,10 +705,10 @@ with tabs[0]:
                 "COCA (USD/t)": f"${r['coca']['COCA_usd']:,.0f}",
                 "COCA (만원/t)": f"{r['coca']['COCA_man']:,.1f}",
                 "흡수제 손실 (kg/t)": f"{r['sol']['grand']:.2f}",
-                "추정 불확도": "±15%",
             })
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-        st.caption("⚠️ SRD는 라이선서 공개값, L/G·We·COCA는 문헌 회귀 모델 추정 (±15%). "
+        st.caption("† 파일럿 실증 데이터 (상업 스케일 미검증) · "
+                   "SRD는 라이선서 공개값, L/G·We·COCA는 문헌 회귀 모델 추정 (±15%) · "
                    "배가스 발생원: " + fg_src)
 
 
@@ -735,36 +763,58 @@ with tabs[2]:
     if not RES:
         st.info("라이선스를 선택하세요.")
     else:
-        COST_ITEMS = [
-            ("ann_cap",   "CAPEX 연간화",  "#E24B4A"),
-            ("ann_steam", "스팀 비용",     "#EF9F27"),
-            ("ann_elec",  "전력 비용",     "#85B7EB"),
-            ("ann_sol",   "흡수제 비용",   "#5DCAA5"),
-            ("ann_maint", "유지보수",      "#AFA9EC"),
-            ("ann_labor", "인건비",        "#888780"),
+        # ── CAPEX 요약 카드 (상단 별도 표시) ─────────────────────────────────
+        st.markdown("#### 🏗 초기 투자비 (CAPEX)")
+        capex_cols = st.columns(len(RES))
+        for i, (lic, r) in enumerate(RES.items()):
+            capex_cols[i].metric(
+                label=lic,
+                value=f"${r['coca']['TPC_mUSD']:,.1f}M",
+                delta=f"{r['coca']['TPC_bil']:,.0f} 억원",
+            )
+        st.caption("Guthrie method + 6/10 스케일 법칙 추산 · ±20% 불확도")
+
+        st.divider()
+
+        # ── OPEX 스택바 (CAPEX 제외, 운전비용 항목만) ───────────────────────
+        st.markdown("#### 💸 연간 운전비용 (OPEX) 구성")
+        OPEX_ITEMS = [
+            ("ann_steam", "스팀",     "#EF9F27"),
+            ("ann_elec",  "전력",     "#85B7EB"),
+            ("ann_cool",  "냉각수",   "#5DCAA5"),
+            ("ann_sol",   "흡수제",   "#97C459"),
+            ("ann_maint", "유지보수", "#AFA9EC"),
+            ("ann_ins",   "보험",     "#C0A0FF"),
+            ("ann_labor", "인건비",   "#888780"),
         ]
         fig_ca = go.Figure()
-        for key, label, col in COST_ITEMS:
+        for key, label, col in OPEX_ITEMS:
             fig_ca.add_trace(go.Bar(
                 name=label, x=list(RES.keys()),
                 y=[RES[l]["coca"][key] for l in RES],
                 marker_color=col,
+                text=[f"{RES[l]['coca'][key]:,.1f}" for l in RES],
+                textposition="inside",
             ))
-        fig_ca.update_layout(barmode="stack", height=500,
-                              title="연간 비용 구성 (억원/년)",
-                              yaxis_title="억원/년",
-                              plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        fig_ca.update_layout(
+            barmode="stack", height=480,
+            yaxis_title="억원/년",
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            legend=dict(orientation="h", y=-0.18, font=dict(size=11)),
+        )
         st.plotly_chart(fig_ca, use_container_width=True)
 
-        # CAPEX / 연간 CO₂
-        cols = st.columns(len(RES))
+        # ── COCA 최종 요약 ────────────────────────────────────────────────────
+        st.divider()
+        st.markdown("#### 💰 최종 COCA")
+        coca_cols = st.columns(len(RES))
         for i, (lic, r) in enumerate(RES.items()):
-            with cols[i]:
-                st.metric(f"{lic} — TPC", f"{r['coca']['TPC_bil']:,.0f} 억원",
-                          delta=f"${r['coca']['TPC_mUSD']:,.1f}M USD")
-                st.metric("연간 CO₂", f"{r['coca']['ann_CO2']/1e4:,.1f} 만 tCO₂/년")
-                st.metric("COCA (USD/tCO₂)", f"${r['coca']['COCA_usd']:,.0f}")
-                st.metric("COCA (원/tCO₂)", f"{r['coca']['COCA_man']*10000:,.0f} 원")
+            coca_cols[i].metric(
+                label=lic,
+                value=f"${r['coca']['COCA_usd']:,.0f} / tCO₂",
+                delta=f"{r['coca']['COCA_man']*10000:,.0f} 원/tCO₂",
+            )
+        st.caption(f"포집량 기준: {scale:,} tCO₂/년 · CRF {RES[list(RES.keys())[0]]['coca']['CRF']:.4f} · 할인율 {eco['dr']}%")
 
 
 # ── TAB 4: 흡수제 손실 ───────────────────────────────────────────────────────
