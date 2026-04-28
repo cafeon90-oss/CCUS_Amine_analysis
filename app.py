@@ -436,7 +436,7 @@ with tabs[0]:
                 text=[f"{v:.2f}" for v in y_vals],
                 textposition="outside",
             )])
-            fig.update_layout(title=title, yaxis_title=y_label, height=300,
+            fig.update_layout(title=title, yaxis_title=y_label, height=450,
                               showlegend=False,
                               plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                               margin=dict(t=40, b=20, l=20, r=10))
@@ -489,7 +489,7 @@ with tabs[1]:
                 y=[RES[l]["we"][key] for l in RES],
                 marker_color=col,
             ))
-        fig_stk.update_layout(barmode="stack", height=380,
+        fig_stk.update_layout(barmode="stack", height=500,
                                title="We 구성 (GJe/tCO₂)",
                                yaxis_title="GJe/tCO₂",
                                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
@@ -535,7 +535,7 @@ with tabs[2]:
                 y=[RES[l]["coca"][key] for l in RES],
                 marker_color=col,
             ))
-        fig_ca.update_layout(barmode="stack", height=380,
+        fig_ca.update_layout(barmode="stack", height=500,
                               title="연간 비용 구성 (억원/년)",
                               yaxis_title="억원/년",
                               plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
@@ -602,7 +602,7 @@ with tabs[3]:
                 y=[sol_res[l][key] for l in sol_res],
                 marker_color=col,
             ))
-        fig_sol.update_layout(barmode="stack", height=340,
+        fig_sol.update_layout(barmode="stack", height=480,
                                title="흡수제 손실 구성 (kg/tCO₂)",
                                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_sol, use_container_width=True)
@@ -630,7 +630,7 @@ with tabs[3]:
         fig_o2.add_vline(x=O2_in, line_dash="dot", line_color="gray",
                           annotation_text=f"현재 {O2_in}%")
         fig_o2.update_layout(title="O₂ 농도 vs 흡수제 손실율",
-                              xaxis_title="O₂ (%)", yaxis_title="kg/tCO₂", height=300,
+                              xaxis_title="O₂ (%)", yaxis_title="kg/tCO₂", height=450,
                               plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_o2, use_container_width=True)
 
@@ -667,7 +667,7 @@ with tabs[4]:
                 text=[lic], textposition="top center",
                 marker=dict(color=LICENSE[lic]["color"], size=11, symbol="star")))
         fig.update_layout(title=title, xaxis_title=xt, yaxis_title=yt,
-                          height=340, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+                          height=480, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
         return fig
 
     with col5a:
@@ -685,7 +685,7 @@ with tabs[4]:
         fig_lg.update_layout(
             title=f"SRD → L/G 트레이드오프<br><sub>L/G = {sl_LG:.2f}×SRD + {ic_LG:.2f}</sub>",
             xaxis_title="SRD (GJ/tCO₂)", yaxis_title="L/G (L/Nm³)",
-            height=340, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+            height=480, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_lg, use_container_width=True)
 
     with col5b:
@@ -710,7 +710,7 @@ with tabs[4]:
         fig_we2.update_layout(
             title=f"SRD → We 관계<br><sub>We = {sl_We:.3f}×SRD + {ic_We:.3f}</sub>",
             xaxis_title="SRD (GJ/tCO₂)", yaxis_title="We (GJe/tCO₂)",
-            height=340, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+            height=480, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_we2, use_container_width=True)
 
     # SRD vs 흡수제 손실
@@ -732,7 +732,7 @@ with tabs[4]:
     fig_sl.update_layout(
         title="SRD → 흡수제 손실율 관계",
         xaxis_title="SRD (GJ/tCO₂)", yaxis_title="흡수제 손실 (kg/tCO₂)",
-        height=300, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        height=450, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig_sl, use_container_width=True)
     st.caption("흡수제 손실은 배가스 조성(O₂, NOx, SOx)에 의해 크게 달라짐 — ④탭 배가스 조성 반영")
 
@@ -843,7 +843,7 @@ with tabs[5]:
               "<sub>SRD↓ → 재생에너지↓ but 포집에너지↑ → We_total 감소폭이 SRD만큼 크지 않음</sub>",
         xaxis_title="SRD — 재생에너지 (GJ/tCO₂)",
         yaxis_title="We 성분 (GJe/tCO₂)",
-        height=460, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+        height=520, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
         legend=dict(orientation="h", y=-0.22, font=dict(size=11)))
     tc1.plotly_chart(fig_tradeoff, use_container_width=True)
 
@@ -869,7 +869,7 @@ with tabs[5]:
         title=f"'{n_name}' 에너지 성분 분해<br>"
               f"<sub>재생 {n_we['We_thermal']/n_we['We_total']*100:.0f}% | "
               f"포집·후처리 {(1-n_we['We_thermal']/n_we['We_total'])*100:.0f}%</sub>",
-        yaxis_title="We (GJe/tCO₂)", height=460,
+        yaxis_title="We (GJe/tCO₂)", height=520,
         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
         legend=dict(orientation="h", y=-0.22, font=dict(size=11)))
     tc2.plotly_chart(fig_bar, use_container_width=True)
@@ -907,7 +907,7 @@ with tabs[5]:
     fig_pred.update_layout(
         title=f"'{n_name}' — 문헌 상위 {pct:.0f}% (We 기준)",
         xaxis_title="SRD (GJ/tCO₂)", yaxis_title="We (GJe/tCO₂)",
-        height=340, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        height=480, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
     bc1.plotly_chart(fig_pred, use_container_width=True)
 
     # [우] SRD 변화에 따른 COCA 곡선
@@ -938,7 +938,7 @@ with tabs[5]:
     fig_coca.update_layout(
         title="SRD → COCA 곡선<br><sub>재생에너지 절감이 비용에 미치는 민감도</sub>",
         xaxis_title="SRD (GJ/tCO₂)", yaxis_title="COCA (USD/tCO₂)",
-        height=340, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+        height=480, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
     bc2.plotly_chart(fig_coca, use_container_width=True)
 
     # ── 신뢰성 판단 ────────────────────────────────────────────────────────
