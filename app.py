@@ -417,7 +417,8 @@ with st.sidebar:
 
     st.divider()
     st.markdown("**🌡 사이트 조건**")
-    T_cold = st.slider("냉각수 온도 (°C)", 5, 35, 20)
+    T_cold = st.slider("냉각수 온도 (°C)", 5, 45, 20,
+                        help="한국 온대: 15~20°C | 미국 FL·걸프 해안: 30~35°C | 페르시아만 해수: 34~36°C | 중동 냉각탑 설계: 38~42°C | 쿠웨이트·이라크 극단: 45°C")
     P_final = st.selectbox("CO₂ 최종 압력",
                             [("액화탄산 20 bar", 20.0), ("파이프라인 150 bar", 150.0),
                              ("광물탄산화 직접 (~3 bar)", 3.0)],
@@ -1154,8 +1155,8 @@ with tabs[7]:
 | 20 | **Aspen bench** | Aspen Technology. Aspen Plus® Rate-Based Model Benchmark for MEA 30wt% CO₂ capture. Internal validation study. |
 """)
 
-    # ── 4. 공정 라이선스 기술 자료 ───────────────────────────────────────────
-    with st.expander("🏭 공정 라이선스 기술 자료", expanded=True):
+    # ── 4. 공정 라이선스 · 상업 플랜트 자료 ─────────────────────────────────
+    with st.expander("🏭 공정 라이선스 · 상업 플랜트 자료", expanded=True):
         st.markdown("""
 | # | 출처 코드 | 전체 인용 | 비고 |
 |---|-----------|-----------|------|
@@ -1164,6 +1165,9 @@ with tabs[7]:
 | 23 | **Shell 2013** | Shell Cansolv Technologies. DC-103 Solvent Performance Data. Technical Bulletin, 2013. | SRD 참고값 |
 | 24 | **Fluor 2011** | Fluor Corporation. Econamine FG Plus™ Technology. *Energy Procedia*, 4, 1397–1402. 2011. | Econamine+ SRD 3.2~3.3 GJ/tCO₂ |
 | 25 | **Alstom 2012** | Alstom Power. Advanced Chilled Ammonia Process for CO₂ Capture. DOE/NETL-2012. | 냉각암모니아 공정 SRD ~2.0 GJ/tCO₂ |
+| 26 | **Boundary Dam 2015** | SaskPower. *Boundary Dam Carbon Capture Project — Achievement of First Year of Commercial Operations*. SaskPower Technical Report, 2015. | 세계 최초 상업 발전소 후연도 CCS · Shell Cansolv DC-103 · SRD 3.4 GJ/tCO₂ |
+| 27 | **Global CCS 2016** | Global CCS Institute. *Boundary Dam Integrated Carbon Capture and Storage Demonstration Project*. Project Profile, 2016. https://co2re.co/FacilityData | Boundary Dam 3 운전 데이터·성능 검증 |
+| 28 | **Petra Nova 2017** | NRG Energy / JX Nippon. *Petra Nova Carbon Capture Project — Final Technical Report*. DOE/NETL Award DE-FE0031624, 2017. | MHI KS-1 용매 · 240 MWe 석탄 · 1.4 Mt CO₂/yr (2020년 운전 중단) |
 """)
 
     # ── 5. KoSol (KEPCO) 국내 자료 ───────────────────────────────────────────
@@ -1171,32 +1175,44 @@ with tabs[7]:
         st.markdown("""
 | # | 출처 코드 | 전체 인용 | 비고 |
 |---|-----------|-----------|------|
-| 26 | **KEPCO 2018** | 한국전력공사 전력연구원. KoSol-4 포집 공정 성능 실증 결과 보고서. 2018. | KoSol-4 SRD 실측값 |
-| 27 | **KEPCO 2019** | 한국전력공사 전력연구원. KoSol-5 개발 및 파일럿 성능 평가. 2019. | KoSol-5 SRD 실측값 |
-| 28 | **KEPCO 2021** | 한국전력공사 전력연구원. LPS 기반 KoSol 공정 최적화 연구. 2021. | KoSol-5 운전 최적화 |
+| 29 | **KEPCO 2018** | 한국전력공사 전력연구원. KoSol-4 포집 공정 성능 실증 결과 보고서. 2018. | KoSol-4 SRD 실측값 |
+| 30 | **KEPCO 2019** | 한국전력공사 전력연구원. KoSol-5 개발 및 파일럿 성능 평가. 2019. | KoSol-5 SRD 실측값 |
+| 31 | **KEPCO 2021** | 한국전력공사 전력연구원. LPS 기반 KoSol 공정 최적화 연구. 2021. | KoSol-5 운전 최적화 |
 
 > **주의**: KoSol은 한전(KEPCO) 개발 공정. KIER 개발 KIERSOL(K₂CO₃ 기반)과 별개 기술임.
 """)
 
-    # ── 6. 방법론 기준 ───────────────────────────────────────────────────────
+    # ── 6. 냉각수 온도 설계 기준 ──────────────────────────────────────────────
+    with st.expander("🌡 냉각수 온도 설계 기준", expanded=False):
+        st.markdown("""
+| # | 출처 코드 | 전체 인용 | 비고 |
+|---|-----------|-----------|------|
+| 32 | **WNA 2023** | World Nuclear Association. *Cooling Power Plants*. Updated 2023. https://world-nuclear.org/information-library/current-and-future-generation/cooling-power-plants | 냉각수 온도 및 발전소 냉각 방식 종합 |
+| 33 | **NRC 2018** | U.S. Nuclear Regulatory Commission. Turkey Point Units 3 & 4 — License Amendment for Cooling Canal System Temperature Limit (40°C). NRC Docket 50-250/50-251, 2018. | 미국 플로리다 해수 냉각 최대 허용 40°C |
+| 34 | **PERSGA 2014** | PERSGA / IUCN. *Sea Surface Temperature Variability in the Persian Gulf and Red Sea*. Regional Report, 2014. | 페르시아만 해수 연간 최고 34~36°C; 극단 38°C (8월) |
+| 35 | **ASHRAE 2021** | American Society of Heating, Refrigerating and Air-Conditioning Engineers. *ASHRAE Handbook — Fundamentals*, Chapter 14: Climatic Design Information. 2021. | 쿠웨이트시티 설계 습구온도 36.3°C → 냉각탑 설계 40~45°C |
+| 36 | **Al-Ajmi 2010** | Al-Ajmi, F. et al. (2010). Measured thermal performance of cooling towers in Kuwait. *Applied Thermal Engineering*, 30(8-9), 901–907. | 쿠웨이트 냉각탑 출구 온도 실측 42~46°C (하절기) |
+""")
+
+    # ── 7. 방법론 기준 ───────────────────────────────────────────────────────
     with st.expander("⚙️ 계산 방법론 기준", expanded=False):
         st.markdown("""
 | # | 항목 | 출처 및 기준 |
 |---|------|-------------|
-| 29 | **We (Equivalent Work)** | Oyenekan, B.A. & Rochelle, G.T. (2006). Energy Performance of Stripper Configurations for CO₂ Capture by Aqueous Amines. *Ind. Eng. Chem. Res.*, 45(8), 2457–2464. |
-| 30 | **SPECCA** | IEAGHG (2011). Oxy Combustion Processes. 수식: (HR_cap - HR_ref) / (E_ref - E_cap) |
-| 31 | **COCA / LCOE 방법론** | NETL Quality Guidelines for Energy System Studies (QGESS). DOE/NETL-2019/2121. 2019. |
-| 32 | **CAPEX 6/10 스케일 법칙** | Towler, G. & Sinnott, R. *Chemical Engineering Design*, 2nd ed., Elsevier, 2013. Ch. 9. |
-| 33 | **Guthrie CAPEX 방법** | Guthrie, K.M. (1969). Data and techniques for preliminary capital cost estimating. *Chem. Eng.*, 76(6), 114–142. |
-| 34 | **Carnot 효율** | 열역학 기본식: η = 1 − T_cold / T_steam (절대온도 기준) |
-| 35 | **Antoine 포화온도** | Perry's Chemical Engineers' Handbook, 8th ed. Antoine equation for water. |
-| 36 | **흡수제 산화분해 (Arrhenius)** | Nguyen, T. et al. (2010) [No.18 참조]; Voice & Rochelle (2011) [No.19 참조]. |
-| 37 | **흡수제 열분해 (Arrhenius)** | Davis, J. & Rochelle, G. (2009). Thermal degradation of MEA. *Energy Procedia*, 1(1), 327–333. |
-| 38 | **L/G–SRD 회귀** | 본 툴 내장 문헌 26개 포인트 선형 회귀 (scipy.stats.linregress). |
-| 39 | **CO₂ 압축 전력** | NETL B12B 실측 보정: 44.8 MWe ÷ 578.7 tCO₂/hr = 0.279 GJe/tCO₂ (1.5→153 bar, 8단). |
+| 37 | **We (Equivalent Work)** | Oyenekan, B.A. & Rochelle, G.T. (2006). Energy Performance of Stripper Configurations for CO₂ Capture by Aqueous Amines. *Ind. Eng. Chem. Res.*, 45(8), 2457–2464. |
+| 38 | **SPECCA** | IEAGHG (2011). Oxy Combustion Processes. 수식: (HR_cap - HR_ref) / (E_ref - E_cap) |
+| 39 | **COCA / LCOE 방법론** | NETL Quality Guidelines for Energy System Studies (QGESS). DOE/NETL-2019/2121. 2019. |
+| 40 | **CAPEX 6/10 스케일 법칙** | Towler, G. & Sinnott, R. *Chemical Engineering Design*, 2nd ed., Elsevier, 2013. Ch. 9. |
+| 41 | **Guthrie CAPEX 방법** | Guthrie, K.M. (1969). Data and techniques for preliminary capital cost estimating. *Chem. Eng.*, 76(6), 114–142. |
+| 42 | **Carnot 효율** | 열역학 기본식: η = 1 − T_cold / T_steam (절대온도 기준) |
+| 43 | **Antoine 포화온도** | Perry's Chemical Engineers' Handbook, 8th ed. Antoine equation for water. |
+| 44 | **흡수제 산화분해 (Arrhenius)** | Nguyen, T. et al. (2010) [No.18 참조]; Voice & Rochelle (2011) [No.19 참조]. |
+| 45 | **흡수제 열분해 (Arrhenius)** | Davis, J. & Rochelle, G. (2009). Thermal degradation of MEA. *Energy Procedia*, 1(1), 327–333. |
+| 46 | **L/G–SRD 회귀** | 본 툴 내장 문헌 26개 포인트 선형 회귀 (scipy.stats.linregress). |
+| 47 | **CO₂ 압축 전력** | NETL B12B 실측 보정: 44.8 MWe ÷ 578.7 tCO₂/hr = 0.279 GJe/tCO₂ (1.5→153 bar, 8단). |
 """)
 
-    # ── 7. 한국 유틸리티 단가 기준 ──────────────────────────────────────────
+    # ── 8. 한국 유틸리티 단가 기준 ──────────────────────────────────────────
     with st.expander("💰 한국 유틸리티·재무 기준값", expanded=False):
         st.markdown("""
 | 항목 | 기준값 | 출처 |
@@ -1223,7 +1239,7 @@ with tabs[7]:
 st.divider()
 st.caption(
     "📚 방법론: IEAGHG Benchmark Studies (2007~2014) · NETL Cost & Performance Baseline · "
-    "Rochelle et al. (Energy Procedia) · KIER KoSol 보고서  |  "
+    "Rochelle et al. (Energy Procedia) · KEPCO KoSol 보고서  |  "
     "⚠️ 본 툴의 CAPEX·OPEX 추산은 ±20% 불확도를 포함하며, 투자 결정 전 상세 설계 검증 필요  |  "
     "한국 유틸리티 단가 기준: 산업용 전기 120원/kWh, LPS 스팀 25,000원/GJ (2025 기준)"
 )
